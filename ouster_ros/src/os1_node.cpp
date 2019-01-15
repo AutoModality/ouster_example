@@ -66,6 +66,11 @@ int main(int argc, char** argv) {
         sensor_msgs::PointCloud2 msg =
              ouster_ros::OS1::cloud_to_cloud_msg(cloud, scan_ts);
          if (validTimestamp(msg.header.stamp)) {
+         ros::Time now = ros::Time::now();
+         if(msg.header.stamp.toSec() > now.toSec())
+         {
+         	 msg.header.stamp = now;
+         }
            lidar_pub.publish(msg);
          }
         });
