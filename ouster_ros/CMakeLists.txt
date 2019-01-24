@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_conversions
   roscpp
   ouster_client
+  latency_testing
 )
 
 add_message_files(DIRECTORY msg FILES PacketMsg.msg)
@@ -28,7 +29,7 @@ catkin_package(
 )
 
 add_library(ouster_ros STATIC src/os1_ros.cpp)
-target_link_libraries(ouster_ros ${catkin_LIBRARIES})
+target_link_libraries(ouster_ros ${catkin_LIBRARIES} amdelaystatistics rt)
 add_dependencies(ouster_ros ${PROJECT_NAME}_gencpp)
 
 add_executable(os1_node src/os1_node.cpp)

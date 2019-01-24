@@ -29,6 +29,7 @@
 
 #include "ouster_ros/PacketMsg.h"
 #include "ouster_ros/os1_ros.h"
+#include <latency_testing/DelayStatistics.h>
 
 using ns = std::chrono::nanoseconds;
 using PacketMsg = ouster_ros::PacketMsg;
@@ -63,15 +64,18 @@ int main(int argc, char** argv) {
 
     auto lidar_handler = ouster_ros::OS1::batch_packets(
         scan_dur, [&](ns scan_ts, const ouster_ros::OS1::CloudOS1& cloud) {
-        sensor_msgs::PointCloud2 msg =
+	  am::MeasureDelayStart("ouster_cb");
+	  sensor_msgs::PointCloud2 msg =
              ouster_ros::OS1::cloud_to_cloud_msg(cloud, scan_ts);
          if (validTimestamp(msg.header.stamp)) {
          ros::Time now = ros::Time::now();
-         if(msg.header.stamp.toSec() > now.toSec())
-         {
-         	 msg.header.stamp = now;
+         if(msg.header.stamp.toSec() > now.toSec()) {
+	   msg.header.stamp = now;
          }
-           lidar_pub.publish(msg);
+	 am::MeasureDelayStop("ouster_cb");
+	 am::MeasureDelayStart("ouster_pub");
+	 lidar_pub.publish(msg);
+	 am::MeasureDelayStop("ouster_pub");
          }
         });
 
