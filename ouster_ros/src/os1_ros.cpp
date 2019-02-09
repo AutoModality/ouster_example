@@ -87,19 +87,42 @@ static PointOS1 nth_point(int ind, const uint8_t* col_buf) {
 
     return point;
 }
+
+
+int azimuth_angles_processed =0 ;
+unsigned int first_packet = 0;
+
+  
 void add_packet_to_cloud(ns scan_start_ts, ns scan_duration,
                          const PacketMsg& pm, CloudOS1& cloud) {
     const uint8_t* buf = pm.buf.data();
+
     for (int icol = 0; icol < columns_per_buffer; icol++) {
         const uint8_t* col_buf = nth_col(icol, buf);
         float ts = (col_timestamp(col_buf) - scan_start_ts.count()) /
                    (float)scan_duration.count();
 
+        //
+        // Only add the packets that aren't zero or less than 0.5
+        //
         for (int ipx = 0; ipx < pixels_per_column; ipx++) {
             auto p = nth_point(ipx, col_buf);
             p.t = ts;
-            cloud.push_back(p);
+            if ( !(p.x <= 0.5 && p.y <= 0.5 && p.z <= 0.5 )) { 
+              // std::cout << "(" << p.x << "," << p.y << "," << p.z  << ")\n";
+              cloud.push_back(p);
+            }
         }
+    }
+    if ( !first_packet ) {
+        first_packet = *((unsigned int*)&buf[12]);
+        azimuth_angles_processed ++;
+    } else if ( *((unsigned int*)&buf[12]) == first_packet ) {
+      
+        azimuth_angles_processed = 0;
+
+    } else {
+        azimuth_angles_processed ++;
     }
 }
 
@@ -142,12 +165,17 @@ std::function<void(const PacketMsg&)> batch_packets(
         if (scan_ts.count() == -1L)
             scan_ts = nearest_scan_dur(scan_dur, packet_ts);
 
+        // @TODO
+        // Keep track of the number of points in the
+        // cloud...
+        // Maintain a backup point cloud when we haven't
+        // fully completed a scan
         OS1::add_packet_to_cloud(scan_ts, scan_dur, pm, *cloud);
 
         auto batch_dur = packet_ts - scan_ts;
-        if (batch_dur >= scan_dur || batch_dur < ns(0)) {
-            f(scan_ts, *cloud);
 
+        if ( azimuth_angles_processed == 0 ) {
+            f(scan_ts, *cloud);
             cloud->clear();
             scan_ts = ns(-1L);
         }
