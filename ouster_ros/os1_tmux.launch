@@ -1,0 +1,46 @@
+<launch>
+  <remap from="/os1_node/points" to="/sensor/ouster/pointcloud2"/>
+
+  <arg name="scan_dur_ns" default="100000000" doc="nanoseconds to batch lidar packets before publishing a cloud"/>
+  <!-- <arg name="os1_hostname" default="192.168.2.29" doc="hostname or IP in dotted decimal form of the sensor"/> -->
+  <!-- <arg name="os1_udp_dest" default="192.168.2.29" doc="hostname or IP where the sensor will send data packets"/> -->
+  <!-- <arg name="os1_hostname" default="127.0.0.1" doc="hostname or IP in dotted decimal form of the sensor"/> -->
+  <!-- <arg name="os1_udp_dest" default="127.0.0.1" doc="hostname or IP where the sensor will send data packets"/> -->
+  <arg name="os1_hostname" default="192.168.1.55" doc="hostname or IP in dotted decimal form of the sensor"/>
+  <arg name="os1_udp_dest" default="192.168.1.1" doc="hostname or IP where the sensor will send data packets"/>
+  <arg name="os1_lidar_port" default="7502" doc="port to which the sensor should send lidar data"/>
+  <arg name="os1_imu_port" default="7503" doc="port to which the sensor should send imu data"/>
+  <arg name="replay" default="false" doc="when true, the node will listen on ~/lidar_packets and ~/imu_packets for data instead of attempting to connect to a sensor"/>
+  <arg name="gdbargs" value="$(optenv GDB_ARGS)" />
+  <group ns="/os1_node">
+    <param name="scan_dur_ns" value="$(arg scan_dur_ns)"/>
+    <param name="os1_hostname" value="$(arg os1_hostname)"/>
+    <param name="os1_udp_dest" value="$(arg os1_udp_dest)"/>
+    <param name="os1_lidar_port" value="$(arg os1_lidar_port)"/>
+    <param name="os1_imu_port" value="$(arg os1_imu_port)"/>
+    <param name="replay" value="$(arg replay)"/>
+  </group>
+  <env name="GDB_ARGS" value="$(arg gdbargs)" />
+  <node pkg="ouster_ros" type="os1_node" name="os1_node" output="screen" required="true"
+        launch-prefix="/home/nvidia/Scripts/ros_tmux_other_window"
+  />
+
+    <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="rviz_world" args="0 0 0 0 0 0 Asset_Frame model_origin" /> -->
+    <!-- The truth frame is used to generate the truth path from loc_rviz and should be attached by default to the rviz_world frame -->
+    <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="rviz_truth" args="0 0 0 0 0 0 rviz_world truth" /> -->
+
+    <!-- <!-\- define your static transforms for the sensor visualization -\-> -->
+    <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="ground_enu" args="0 0 0 0 0 0 Asset_ENU ground_ENU" /> -->
+    <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="velocity_enu" args="0 0 0 0 0 0 Asset_ENU velocity_ENU" /> -->
+    <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="drone_enu" args="0 0 0 0 0 0 drone_ENU body_Level_FLU" /> -->
+
+    <!-- run rviz -->
+    <!-- <node pkg="rviz" type="rviz" name="rviz" args="-d /home/ubuntu/launch/subt_demo/map.rviz"/> -->
+
+    <!-- create the transforms from the world model entities to the URDF visualization entities -->    
+    <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="rviz_corridor_xfer_002" args="0 0 0 0 0 0 corridor_002 rviz_corridor_002" /> -->
+    <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="rviz_corridor_xfer_004" args="0 0 0 0 0 0 corridor_004 rviz_corridor_004" /> -->
+  
+
+        
+</launch>

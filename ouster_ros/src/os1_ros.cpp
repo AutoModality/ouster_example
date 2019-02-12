@@ -114,6 +114,7 @@ void add_packet_to_cloud(ns scan_start_ts, ns scan_duration,
             }
         }
     }
+    std::cout << "Angle: " << *((unsigned int*)&buf[12]) << "\n";
     if ( !first_packet ) {
         first_packet = *((unsigned int*)&buf[12]);
         azimuth_angles_processed ++;
