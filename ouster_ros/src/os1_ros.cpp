@@ -90,8 +90,13 @@ static PointOS1 nth_point(int ind, const uint8_t* col_buf) {
 
 
 int azimuth_angles_processed =0 ;
-unsigned int first_packet = 0;
+int first_angle = -1;
 
+
+inline unsigned int rounded_angle(unsigned int colval )
+{
+  return (colval / 1408)*1408;
+}
   
 void add_packet_to_cloud(ns scan_start_ts, ns scan_duration,
                          const PacketMsg& pm, CloudOS1& cloud) {
@@ -100,8 +105,8 @@ void add_packet_to_cloud(ns scan_start_ts, ns scan_duration,
     for (int icol = 0; icol < columns_per_buffer; icol++) {
         const uint8_t* col_buf = nth_col(icol, buf);
         float ts = (col_timestamp(col_buf) - scan_start_ts.count()) /
-                   (float)scan_duration.count();
-
+          (float)scan_duration.count();
+        
         //
         // Only add the packets that aren't zero or less than 0.5
         //
@@ -109,18 +114,18 @@ void add_packet_to_cloud(ns scan_start_ts, ns scan_duration,
             auto p = nth_point(ipx, col_buf);
             p.t = ts;
             if ( !(p.x <= 0.5 && p.y <= 0.5 && p.z <= 0.5 )) { 
-              // std::cout << "(" << p.x << "," << p.y << "," << p.z  << ")\n";
-              cloud.push_back(p);
+                // std::cout << "(" << p.x << "," << p.y << "," << p.z  << ")\n";
+                cloud.push_back(p);
             }
         }
     }
-    if ( !first_packet ) {
-        first_packet = *((unsigned int*)&buf[12]);
+    
+    // std::cout << "Angle: " << (uint32_t)col_h_encoder_count( buf ) << "\n";
+    if ( first_angle < 0 ) {
+        first_angle = rounded_angle( *((unsigned int*)&buf[12]) );
         azimuth_angles_processed ++;
-    } else if ( *((unsigned int*)&buf[12]) == first_packet ) {
-      
+    } else if ( rounded_angle( *((unsigned int*)&buf[12]) )  == (unsigned int)first_angle ) { 
         azimuth_angles_processed = 0;
-
     } else {
         azimuth_angles_processed ++;
     }
