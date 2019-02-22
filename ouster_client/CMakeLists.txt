@@ -24,3 +24,15 @@ target_include_directories(ouster_client PUBLIC include)
 
 add_executable(ouster_client_example src/main.cpp)
 target_link_libraries(ouster_client_example ouster_client)
+
+SET(OUSTER_INCLUDE "include" )
+
+install(DIRECTORY include/ouster
+  DESTINATION ${OUSTER_INCLUDE} )
+
+
+install(TARGETS ouster_client
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  )
+
