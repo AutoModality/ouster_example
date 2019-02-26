@@ -19,8 +19,6 @@ find_package(catkin REQUIRED
 add_message_files(DIRECTORY msg FILES PacketMsg.msg)
 generate_messages(DEPENDENCIES  sensor_msgs std_msgs)
 
-MESSAGE("INCLUDE : ${catkin_INCLUDE_DIRS}")
-
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
