@@ -113,7 +113,7 @@ void add_packet_to_cloud(ns scan_start_ts, ns scan_duration,
         for (int ipx = 0; ipx < pixels_per_column; ipx++) {
             auto p = nth_point(ipx, col_buf);
             p.t = ts;
-            if ( !(p.x <= 0.5 && p.y <= 0.5 && p.z <= 0.5 )) { 
+            if ( !(std::sqrt(p.x*p.x + p.y*p.y + p.z*p.z) < 0.5 )) { 
                 // std::cout << "(" << p.x << "," << p.y << "," << p.z  << ")\n";
                 cloud.push_back(p);
             }
