@@ -91,11 +91,19 @@ static PointOS1 nth_point(int ind, const uint8_t* col_buf) {
 
 int azimuth_angles_processed =0 ;
 int first_angle = -1;
-
+int prev_angle = -1;
+  
 
 inline unsigned int rounded_angle(unsigned int colval )
 {
   return (colval / 1408)*1408;
+}
+#define MAX_ANGLE_VALUE  1408*64
+  
+inline unsigned int angle_distance( unsigned int angle1, unsigned int angle2)
+{
+  unsigned int distance = abs( angle1 - angle2);
+  return ( angle1 < angle2 ? distance  :  MAX_ANGLE_VALUE - distance );
 }
   
 void add_packet_to_cloud(ns scan_start_ts, ns scan_duration,
@@ -113,22 +121,28 @@ void add_packet_to_cloud(ns scan_start_ts, ns scan_duration,
         for (int ipx = 0; ipx < pixels_per_column; ipx++) {
             auto p = nth_point(ipx, col_buf);
             p.t = ts;
+
             if ( !(std::sqrt(p.x*p.x + p.y*p.y + p.z*p.z) < 0.5 )) { 
                 // std::cout << "(" << p.x << "," << p.y << "," << p.z  << ")\n";
-                cloud.push_back(p);
+		// ROS_INFO("Point!\n");
+		cloud.push_back(p);
             }
         }
     }
-    
+    unsigned int cur_angle = rounded_angle( *((unsigned int*)&buf[12]));
     // std::cout << "Angle: " << (uint32_t)col_h_encoder_count( buf ) << "\n";
     if ( first_angle < 0 ) {
-        first_angle = rounded_angle( *((unsigned int*)&buf[12]) );
+        first_angle = cur_angle;
         azimuth_angles_processed ++;
-    } else if ( rounded_angle( *((unsigned int*)&buf[12]) )  == (unsigned int)first_angle ) { 
-        azimuth_angles_processed = 0;
+    } else if ( cur_angle  == (unsigned int)first_angle  ) { 
+	azimuth_angles_processed = 0;
+    } else if( first_angle >= 0 && angle_distance( prev_angle, cur_angle ) > angle_distance( prev_angle, first_angle )) { 
+	azimuth_angles_processed = 0;
     } else {
         azimuth_angles_processed ++;
     }
+    prev_angle = cur_angle;
+    // ROS_INFO("Angle: %d\t%d\n", first_angle, cur_angle);
 }
 
 void spin(const client& cli,

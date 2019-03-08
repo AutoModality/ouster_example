@@ -34,7 +34,7 @@
 using ns = std::chrono::nanoseconds;
 using PacketMsg = ouster_ros::PacketMsg;
 
-bool validTimestamp(const ros::Time& msg_time) {
+bool validTimestamp(ros::Time& msg_time, double time_offset_ms = 50.0) {
    const ros::Duration kMaxTimeOffset(1.0);
 
    const ros::Time now = ros::Time::now();
@@ -43,7 +43,13 @@ bool validTimestamp(const ros::Time& msg_time) {
          1, "OS1 clock is currently not in sync with host. Current host time: "
                 << now << " OS1 message time: " << msg_time
                 << ". Rejecting measurement.");
-     return false;
+                
+     /*Total HACK
+     	SETTING TO ros::Time::now() - time_offset_ms milli sec and return true
+     */
+     msg_time = ros::Time::now() - ros::Duration(time_offset_ms / 1000.0); //time from sec double constructor
+     //msg_time.
+     //return false;
    }
    return true;
  }
@@ -70,12 +76,12 @@ int main(int argc, char** argv) {
          if (validTimestamp(msg.header.stamp)) {
          ros::Time now = ros::Time::now();
          if(msg.header.stamp.toSec() > now.toSec()) {
-	   msg.header.stamp = now;
+	   				msg.header.stamp = now;
          }
-	 am::MeasureDelayStop("ouster_cb");
-	 am::MeasureDelayStart("ouster_pub");
+	 //am::MeasureDelayStop("ouster_cb");
+	 //am::MeasureDelayStart("ouster_pub");
 	 lidar_pub.publish(msg);
-	 am::MeasureDelayStop("ouster_pub");
+	 //am::MeasureDelayStop("ouster_pub");
          }
         });
 
