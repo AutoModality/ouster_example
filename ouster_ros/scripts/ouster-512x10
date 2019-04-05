@@ -1,1 +1,1 @@
-set_config_param lidar_mode 512x20
+set_config_param lidar_mode 512x10
