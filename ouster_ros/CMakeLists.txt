@@ -18,7 +18,6 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_conversions
   roscpp
   ouster_client
-  ouster_viz
   tf2
   tf2_ros
   tf2_geometry_msgs
@@ -39,7 +38,7 @@ catkin_package(
   CATKIN_DEPENDS
     roscpp message_runtime pcl_ros
     std_msgs sensor_msgs geometry_msgs
-    ouster_client ouster_viz
+    ouster_client 
 )
 
 add_library(ouster_ros STATIC src/os1_ros.cpp)
@@ -54,10 +53,3 @@ add_executable(os1_cloud_node src/os1_cloud_node.cpp)
 target_link_libraries(os1_cloud_node ouster_ros ${catkin_LIBRARIES})
 add_dependencies(os1_cloud_node ${PROJECT_NAME}_gencpp)
 
-add_executable(viz_node src/viz_node.cpp)
-target_link_libraries(viz_node ${catkin_LIBRARIES})
-add_dependencies(viz_node ${PROJECT_NAME}_gencpp)
-
-add_executable(img_node src/img_node.cpp)
-target_link_libraries(img_node ouster_ros ${catkin_LIBRARIES})
-add_dependencies(img_node ${PROJECT_NAME}_gencpp)
