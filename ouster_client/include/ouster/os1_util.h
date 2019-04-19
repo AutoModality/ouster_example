@@ -79,10 +79,10 @@ std::vector<int> get_px_offset(int W);
  * @return a function taking a lidar packet buffer and random-access iterator to
  * which data is added for every point in the scan.
  */
-template <typename iterator_type, typename F, typename C>
+template <typename iterator_type, typename F, typename C, typename CloudType >
 std::function<void(const uint8_t*, iterator_type it)> batch_to_iter(
     const std::vector<double>& xyz_lut, int W, int H,
-    const typename iterator_type::value_type& empty, C&& c, F&& f) {
+    const typename iterator_type::value_type& empty, C&& c, F&& f, CloudType *cloud) {
     int next_m_id{W};
     int32_t cur_f_id{-1};
 
@@ -127,17 +127,21 @@ std::function<void(const uint8_t*, iterator_type it)> batch_to_iter(
                 const uint8_t* px_buf = OS1::nth_px(ipx, col_buf);
                 uint32_t r = OS1::px_range(px_buf);
                 int ind = 3 * (idx + ipx);
-
                 // x, y, z(m), i, ts, reflectivity, ring, noise, range (mm)
-                it[idx + ipx] = c(r * 0.001f * xyz_lut[ind + 0],
+                auto tmp = c(r * 0.001f * xyz_lut[ind + 0],
                                   r * 0.001f * xyz_lut[ind + 1],
                                   r * 0.001f * xyz_lut[ind + 2],
                                   OS1::px_signal_photons(px_buf), ts - scan_ts,
                                   OS1::px_reflectivity(px_buf), ipx,
                                   OS1::px_noise_photons(px_buf), r);
+                it[idx + ipx] = tmp;
+                if ( std::sqrt(tmp.x*tmp.x + tmp.y*tmp.y + tmp.z*tmp.z) >= 0.5 ) { 
+                  cloud->push_back(tmp);
+                }
             }
         }
     };
+
 }
 }
 }

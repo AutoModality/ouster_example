@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
     auto lidar_frame = tf_prefix + "/os1_lidar";
 
     ouster_ros::OS1ConfigSrv cfg{};
-    auto client = nh.serviceClient<ouster_ros::OS1ConfigSrv>("os1_config");
+    auto client = nh.serviceClient<ouster_ros::OS1ConfigSrv>("/os1_node/os1_config");
     client.waitForExistence();
     if (!client.call(cfg)) {
         ROS_ERROR("Calling os1 config service failed");
@@ -51,19 +51,29 @@ int main(int argc, char** argv) {
                                      cfg.response.beam_altitude_angles);
 
     CloudOS1 cloud{W, H};
+    CloudOS1 send_cloud{W*H, 1};
+    send_cloud.clear();
     auto it = cloud.begin();
+    //auto insertit = send_cloud.begin();
     sensor_msgs::PointCloud2 msg{};
 
-    auto batch_and_publish = OS1::batch_to_iter<CloudOS1::iterator>(
-        xyz_lut, W, H, {}, &PointOS1::make,
-        [&](uint64_t scan_ts) mutable {
-            msg = ouster_ros::OS1::cloud_to_cloud_msg(
-                cloud, std::chrono::nanoseconds{scan_ts}, lidar_frame);
-            lidar_pub.publish(msg);
-        });
+    auto batch_and_publish = OS1::batch_to_iter<CloudOS1::iterator>(xyz_lut,
+                                  W,
+                                  H,
+                                  {},
+                                  &PointOS1::make,
+                                  [&](uint64_t scan_ts) mutable {
+                                      msg = ouster_ros::OS1::cloud_to_cloud_msg(
+                                                 send_cloud,
+                                                 std::chrono::nanoseconds{scan_ts}, lidar_frame);
+                                      send_cloud.clear();
+                                      lidar_pub.publish(msg);
+                                  },
+                                  &send_cloud
+                             );
 
     auto lidar_handler = [&](const PacketMsg& pm) mutable {
-        batch_and_publish(pm.buf.data(), it);
+        batch_and_publish(pm.buf.data(), it );
     };
 
     auto imu_handler = [&](const PacketMsg& p) {
