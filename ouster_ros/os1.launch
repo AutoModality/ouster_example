@@ -26,14 +26,4 @@
     <remap from="~/imu_packets" to="/os1_node/imu_packets"/>
   </node>
 
-  <node if="$(arg viz)" pkg="ouster_ros" name="viz_node" type="viz_node" output="screen" required="true">
-    <remap from="~/os1_config" to="/os1_node/os1_config"/>
-    <remap from="~/points" to="/os1_cloud_node/points"/>
-  </node>
-
-  <node if="$(arg image)" pkg="ouster_ros" name="img_node" type="img_node" output="screen" required="true">
-    <remap from="~/os1_config" to="/os1_node/os1_config"/>
-    <remap from="~/points" to="/os1_cloud_node/points"/>
-  </node>
-
 </launch>
