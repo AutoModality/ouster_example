@@ -53,3 +53,17 @@ add_executable(os1_cloud_node src/os1_cloud_node.cpp)
 target_link_libraries(os1_cloud_node ouster_ros ${catkin_LIBRARIES})
 add_dependencies(os1_cloud_node ${PROJECT_NAME}_gencpp)
 
+install(TARGETS ouster_ros os1_node os1_cloud_node ${PROJECT_NAME}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  )
+
+install(FILES os1.launch
+  DESTINATION "${CATKIN_PACKAGE_SHARE_DESTINATION}"
+  )
+
+install(DIRECTORY scripts/
+  DESTINATION "${CATKIN_PACKAGE_SHARE_DESTINATION}/scripts"
+  FILE_PERMISSIONS USE_SOURCE_PERMISSIONS
+)
