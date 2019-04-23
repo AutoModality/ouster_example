@@ -79,10 +79,10 @@ std::vector<int> get_px_offset(int W);
  * @return a function taking a lidar packet buffer and random-access iterator to
  * which data is added for every point in the scan.
  */
-template <typename iterator_type, typename F, typename C, typename CloudType >
+template <typename iterator_type, typename F, typename C, typename PointCallback >
 std::function<void(const uint8_t*, iterator_type it)> batch_to_iter(
     const std::vector<double>& xyz_lut, uint32_t W, uint32_t H,
-    const typename iterator_type::value_type& empty, C&& c, F&& f, CloudType *cloud) {
+    const typename iterator_type::value_type& empty, C&& c, F&& f,  PointCallback&&g) {
     uint32_t next_m_id{W};
     int32_t cur_f_id{-1};
 
@@ -135,13 +135,8 @@ std::function<void(const uint8_t*, iterator_type it)> batch_to_iter(
                                   OS1::px_reflectivity(px_buf), ipx,
                                   OS1::px_noise_photons(px_buf), r);
                 it[idx + ipx] = tmp;
-                if ( std::sqrt(tmp.x*tmp.x + tmp.y*tmp.y + tmp.z*tmp.z) >= 0.5 ) { 
-                  if ( cloud->size() < W*H ) {
-                    cloud->push_back(tmp);
-                  } else {
-                    ROS_ERROR("Size is greater than cloud capacity\n");
-                  }
-                }
+                g(tmp, (ipx + 2)/4  ); // @TODO Hackish but Ouster didn't write the driver to
+                                       // accomodate their 16 channel LIDAR
             }
         }
     };
