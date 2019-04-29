@@ -18,12 +18,14 @@
 #include "ouster_ros/OS1ConfigSrv.h"
 #include "ouster_ros/PacketMsg.h"
 #include "ouster_ros/os1_ros.h"
+#include <latency_testing/DelayStatistics.h>
 
 using PacketMsg = ouster_ros::PacketMsg;
 using CloudOS1 = ouster_ros::OS1::CloudOS1;
 using PointOS1 = ouster_ros::OS1::PointOS1;
 
 namespace OS1 = ouster::OS1;
+
 
 int main(int argc, char** argv) {
     ros::init(argc, argv, "os1_cloud_node");
@@ -33,6 +35,7 @@ int main(int argc, char** argv) {
     auto imu_topic   = nh.param("imu_topic", std::string{});
     nh.param<std::string>("pcl_channel", pcl_channel, "pcl_channel");
     auto tf_prefix   = nh.param("tf_prefix", std::string{});
+    am::DEFAULT_UPDATE_DELAY=1;// Update every second
     
     auto sensor_frame = tf_prefix + "/os1_sensor";
     auto imu_frame = tf_prefix + "/os1_imu";
@@ -122,6 +125,7 @@ int main(int argc, char** argv) {
                                       channel_pcl[i].clear();
                                     }
                                     lidar_pub.publish(msg);
+                                    am::MeasureDelayStop(ros::this_node::getName() + "/lidar_cb" );
                                   },
                                   //
                                   // Callback on Channel pt
@@ -145,7 +149,8 @@ int main(int argc, char** argv) {
                              );
 
     auto lidar_handler = [&](const PacketMsg& pm) mutable {
-        batch_and_publish(pm.buf.data(), it );
+      am::MeasureDelayStart(ros::this_node::getName() + "/lidar_cb" );
+      batch_and_publish(pm.buf.data(), it );
     };
 
     auto imu_handler = [&](const PacketMsg& p) {

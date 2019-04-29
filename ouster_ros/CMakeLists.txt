@@ -21,6 +21,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf2
   tf2_ros
   tf2_geometry_msgs
+  latency_testing
 )
 
 add_message_files(FILES PacketMsg.msg)
