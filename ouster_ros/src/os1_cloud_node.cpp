@@ -125,7 +125,8 @@ int main(int argc, char** argv) {
                                       channel_pcl[i].clear();
                                     }
                                     lidar_pub.publish(msg);
-                                    am::MeasureDelayStop(ros::this_node::getName() + "/lidar_cb" );
+                                    AM_MEASURE_DELAY_START( ros::this_node::getName() + "/lidar_cb" );
+                                    // am::MeasureDelayStop(ros::this_node::getName() + "/lidar_cb" );
                                   },
                                   //
                                   // Callback on Channel pt
@@ -149,7 +150,8 @@ int main(int argc, char** argv) {
                              );
 
     auto lidar_handler = [&](const PacketMsg& pm) mutable {
-      am::MeasureDelayStart(ros::this_node::getName() + "/lidar_cb" );
+      // am::MeasureDelayStart(ros::this_node::getName() + "/lidar_cb" );
+      AM_MEASURE_DELAY_START( ros::this_node::getName() + "/lidar_cb" );
       batch_and_publish(pm.buf.data(), it );
     };
 
