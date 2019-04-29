@@ -38,7 +38,7 @@ catkin_package(
   CATKIN_DEPENDS
     roscpp message_runtime pcl_ros
     std_msgs sensor_msgs geometry_msgs
-    ouster_client 
+    ouster_client latency_testing am_utils
 )
 
 add_library(ouster_ros STATIC src/os1_ros.cpp)

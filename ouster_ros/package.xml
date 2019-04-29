@@ -30,6 +30,8 @@
   <exec_depend>pcl_conversions</exec_depend>
   <exec_depend>ouster_client</exec_depend>
   <exec_depend>ouster_viz</exec_depend>
+  <exec_depend>latency_testing</exec_depend>
+  <exec_depend>am_utils</exec_depend>
 
   <export></export>
 </package>

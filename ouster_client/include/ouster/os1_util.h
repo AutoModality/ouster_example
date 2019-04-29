@@ -76,13 +76,14 @@ std::vector<int> get_px_offset(int W);
  * @param c function to construct a value from x, y, z (m), i, ts, reflectivity,
  * ring, noise, range (mm). Needed to use with Eigen datatypes.
  * @param f callback invoked when batching a scan is done.
+ * @param g callback invoked on a Pt inside a specific channel.
  * @return a function taking a lidar packet buffer and random-access iterator to
  * which data is added for every point in the scan.
  */
 template <typename iterator_type, typename F, typename C, typename PointCallback >
 std::function<void(const uint8_t*, iterator_type it)> batch_to_iter(
     const std::vector<double>& xyz_lut, uint32_t W, uint32_t H,
-    const typename iterator_type::value_type& empty, C&& c, F&& f,  PointCallback&&g) {
+    const typename iterator_type::value_type& empty, C&& c, F&& f,  PointCallback&& g) {
     uint32_t next_m_id{W};
     int32_t cur_f_id{-1};
 

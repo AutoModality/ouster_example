@@ -62,9 +62,6 @@ int main(int argc, char** argv) {
     CloudOS1 send_cloud{W*H, 1};
     std::vector<sensor_msgs::Imu> imu_entries(W*H+1);
     boost::circular_buffer<sensor_msgs::Imu> imu_buf(10);
-    // std::vector<std::array<int,3>> myfoo;
-    // std::vector<std::vector<int,3>> myfoo;
-    std::vector<std::vector<int>> myfoo(10, std::vector<int>(10,1));
     std::vector<CloudOS1> channel_pcl(OS1::columns_per_buffer, CloudOS1{W*H/OS1::columns_per_buffer,1});
 
     auto average_imus = []( const sensor_msgs::Imu &first, const sensor_msgs::Imu &second )  {
@@ -126,11 +123,14 @@ int main(int argc, char** argv) {
                                     }
                                     lidar_pub.publish(msg);
                                   },
-                                  [&](auto pt, int icol ) {
+                                  //
+                                  // Callback on Channel pt
+                                  //
+                                  [&](auto pt, int ichannel ) {
                                     if ( std::sqrt(pt.x*pt.x + pt.y*pt.y + pt.z*pt.z) >= 0.5 ) {
                                       if ( send_cloud.size() < W*H ) {
                                         send_cloud.push_back(pt);
-                                        channel_pcl[icol].push_back(pt);
+                                        channel_pcl[ichannel].push_back(pt);
                                         if ( imu_buf.empty() ) {
                                           sensor_msgs::Imu a;
                                           imu_entries.push_back(a);
