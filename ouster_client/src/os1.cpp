@@ -300,47 +300,47 @@ std::shared_ptr<client> init_client(const std::string& hostname,
     std::string res;
     bool success = true;
 
-    // success &=
-    //     do_tcp_cmd(sock_fd, {"set_config_param", "udp_ip", udp_dest_host}, res);
-    // success &= res == "set_config_param";
+    success &=
+        do_tcp_cmd(sock_fd, {"set_config_param", "udp_ip", udp_dest_host}, res);
+    success &= res == "set_config_param";
 
-    // success &= do_tcp_cmd(sock_fd, {"set_config_param", "udp_port_lidar",
-    //                                 std::to_string(lidar_port)},
-    //                       res);
-    // success &= res == "set_config_param";
+    success &= do_tcp_cmd(sock_fd, {"set_config_param", "udp_port_lidar",
+                                    std::to_string(lidar_port)},
+                          res);
+    success &= res == "set_config_param";
 
-    // success &= do_tcp_cmd(
-    //     sock_fd, {"set_config_param", "udp_port_imu", std::to_string(imu_port)},
-    //     res);
-    // success &= res == "set_config_param";
+    success &= do_tcp_cmd(
+        sock_fd, {"set_config_param", "udp_port_imu", std::to_string(imu_port)},
+        res);
+    success &= res == "set_config_param";
 
-    // success &= do_tcp_cmd(
-    //     sock_fd, {"set_config_param", "lidar_mode", to_string(mode)}, res);
-    // success &= res == "set_config_param";
+    success &= do_tcp_cmd(
+        sock_fd, {"set_config_param", "lidar_mode", to_string(mode)}, res);
+    success &= res == "set_config_param";
 
-    // success &= do_tcp_cmd(sock_fd, {"get_sensor_info"}, res);
-    // success &= reader->parse(res.c_str(), res.c_str() + res.size(), &cli->meta,
-    //                          &errors);
+    success &= do_tcp_cmd(sock_fd, {"get_sensor_info"}, res);
+    success &= reader->parse(res.c_str(), res.c_str() + res.size(), &cli->meta,
+                             &errors);
 
-    // success &= do_tcp_cmd(sock_fd, {"get_beam_intrinsics"}, res);
-    // success &=
-    //     reader->parse(res.c_str(), res.c_str() + res.size(), &root, &errors);
-    // update_json_obj(cli->meta, root);
+    success &= do_tcp_cmd(sock_fd, {"get_beam_intrinsics"}, res);
+    success &=
+        reader->parse(res.c_str(), res.c_str() + res.size(), &root, &errors);
+    update_json_obj(cli->meta, root);
 
-    // success &= do_tcp_cmd(sock_fd, {"get_imu_intrinsics"}, res);
-    // success &=
-    //     reader->parse(res.c_str(), res.c_str() + res.size(), &root, &errors);
-    // update_json_obj(cli->meta, root);
+    success &= do_tcp_cmd(sock_fd, {"get_imu_intrinsics"}, res);
+    success &=
+        reader->parse(res.c_str(), res.c_str() + res.size(), &root, &errors);
+    update_json_obj(cli->meta, root);
 
-    // success &= do_tcp_cmd(sock_fd, {"get_lidar_intrinsics"}, res);
-    // success &=
-    //     reader->parse(res.c_str(), res.c_str() + res.size(), &root, &errors);
-    // update_json_obj(cli->meta, root);
+    success &= do_tcp_cmd(sock_fd, {"get_lidar_intrinsics"}, res);
+    success &=
+        reader->parse(res.c_str(), res.c_str() + res.size(), &root, &errors);
+    update_json_obj(cli->meta, root);
 
-    // success &= do_tcp_cmd(sock_fd, {"reinitialize"}, res);
-    // success &= res == "reinitialize";
+    success &= do_tcp_cmd(sock_fd, {"reinitialize"}, res);
+    success &= res == "reinitialize";
 
-    // close(sock_fd);
+    close(sock_fd);
 
     // merge extra info into metadata
     cli->meta["hostname"] = hostname;
