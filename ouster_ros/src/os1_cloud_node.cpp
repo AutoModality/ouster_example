@@ -65,7 +65,10 @@ int main(int argc, char** argv) {
     CloudOS1 send_cloud{W*H, 1};
     std::vector<sensor_msgs::Imu> imu_entries(W*H+1);
     boost::circular_buffer<sensor_msgs::Imu> imu_buf(10);
-    std::vector<CloudOS1> channel_pcl(OS1::columns_per_buffer, CloudOS1{W*H/OS1::columns_per_buffer,1});
+    std::vector<CloudOS1> channel_pcl(OS1::columns_per_buffer, CloudOS1{W*H,1});
+    for( int i = 0 ; i < OS1::columns_per_buffer; i ++ ) {
+      channel_pcl[i].clear();
+    }
 
     auto average_imus = []( const sensor_msgs::Imu &first, const sensor_msgs::Imu &second )  {
       sensor_msgs::Imu tmp;
@@ -97,7 +100,9 @@ int main(int argc, char** argv) {
                                   [&](uint64_t scan_ts) mutable {
                                     // ROS_INFO_STREAM("Size of imu is " << imu_entries.size() );
                                     // Last one IMU
-                                    imu_entries.push_back(imu_buf.back());                                    
+                                    if ( !imu_buf.empty() ) {
+                                      imu_entries.push_back(imu_buf.back());
+                                    }
                                     msg = ouster_ros::OS1::cloud_to_cloud_msg(
                                                                                 send_cloud,
                                                                                 std::chrono::nanoseconds{scan_ts},
@@ -125,8 +130,7 @@ int main(int argc, char** argv) {
                                       channel_pcl[i].clear();
                                     }
                                     lidar_pub.publish(msg);
-                                    AM_MEASURE_DELAY_START( ros::this_node::getName() + "/lidar_cb" );
-                                    // am::MeasureDelayStop(ros::this_node::getName() + "/lidar_cb" );
+                                    am::MeasureDelayStop(ros::this_node::getName() + "/lidar_cb" );
                                   },
                                   //
                                   // Callback on Channel pt
@@ -135,12 +139,15 @@ int main(int argc, char** argv) {
                                     if ( std::sqrt(pt.x*pt.x + pt.y*pt.y + pt.z*pt.z) >= 0.5 ) {
                                       if ( send_cloud.size() < W*H ) {
                                         send_cloud.push_back(pt);
-                                        channel_pcl[ichannel].push_back(pt);
+                                        if ( channel_pcl[ichannel].size() < W*H) {
+                                          channel_pcl[ichannel].push_back(pt);
+                                        }
                                         if ( imu_buf.empty() ) {
                                           sensor_msgs::Imu a;
                                           imu_entries.push_back(a);
                                         } else {
-                                          imu_entries.push_back(imu_buf.back());
+                                          if ( !imu_buf.empty() ) 
+                                            imu_entries.push_back(imu_buf.back());
                                         }
                                       } else {
                                         ROS_ERROR("Size is greater than cloud capacity\n");
@@ -150,8 +157,7 @@ int main(int argc, char** argv) {
                              );
 
     auto lidar_handler = [&](const PacketMsg& pm) mutable {
-      // am::MeasureDelayStart(ros::this_node::getName() + "/lidar_cb" );
-      AM_MEASURE_DELAY_START( ros::this_node::getName() + "/lidar_cb" );
+      am::MeasureDelayStart(ros::this_node::getName() + "/lidar_cb" );
       batch_and_publish(pm.buf.data(), it );
     };
 
