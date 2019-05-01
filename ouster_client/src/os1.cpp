@@ -285,7 +285,8 @@ sensor_info parse_metadata(const std::string& meta) {
 std::shared_ptr<client> init_client(const std::string& hostname,
                                     const std::string& udp_dest_host,
                                     lidar_mode mode, int lidar_port,
-                                    int imu_port) {
+                                    int imu_port,
+                                    std::string timestamp_mode ) {
     auto cli = std::make_shared<client>();
 
     int sock_fd = cfg_socket(hostname.c_str());
@@ -311,6 +312,11 @@ std::shared_ptr<client> init_client(const std::string& hostname,
 
     success &= do_tcp_cmd(
         sock_fd, {"set_config_param", "udp_port_imu", std::to_string(imu_port)},
+        res);
+    success &= res == "set_config_param";
+
+    success &= do_tcp_cmd(
+        sock_fd, {"set_config_param", "timestamp_mode", timestamp_mode},
         res);
     success &= res == "set_config_param";
 

@@ -116,9 +116,12 @@ int n_cols_of_lidar_mode(lidar_mode mode);
  */
 std::shared_ptr<client> init_client(const std::string& hostname,
                                     const std::string& udp_dest_host,
-                                    lidar_mode mode = MODE_1024x10,
-                                    int lidar_port = 7502, int imu_port = 7503);
+                                    lidar_mode mode,
+                                    int lidar_port, int imu_port,
+                                    std::string timestamp_mode
+                                    );
 
+ 
 /**
  * Block for up to a second until either data is ready or an error occurs.
  * @param cli client returned by init_client associated with the connection
