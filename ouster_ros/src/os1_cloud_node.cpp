@@ -19,6 +19,10 @@
 #include "ouster_ros/PacketMsg.h"
 #include "ouster_ros/os1_ros.h"
 #include <latency_testing/DelayStatistics.h>
+#include <tf2_ros/transform_listener.h>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2/convert.h>
+#include <geometry_msgs/Point.h>
 
 using PacketMsg = ouster_ros::PacketMsg;
 using CloudOS1 = ouster_ros::OS1::CloudOS1;
@@ -36,7 +40,23 @@ int main(int argc, char** argv) {
     nh.param<std::string>("pcl_channel", pcl_channel, "pcl_channel");
     auto tf_prefix   = nh.param("tf_prefix", std::string{});
     am::DEFAULT_UPDATE_DELAY=1;// Update every second
-    
+    // tf2_ros::Buffer tfBuffer;
+    // tf2_ros::TransformListener tfListener(tfBuffer);
+    // geometry_msgs::TransformStamped transformStamped;
+    // try {
+    //   transformStamped = tfBuffer.lookupTransform("turtle2", "turtle1",ros::Time(0));
+    // } catch ( tf2::TransformException &ex ) {
+    //   transformStamped.transform.translation.x =
+    //     transformStamped.transform.translation.y =
+    //     transformStamped.transform.translation.z = 0;
+    // }
+
+    auto ouster_orientation = nh.param<std::vector<float>>("ouster_orientation", {0.0,0.0,0.0});
+    tf2::Quaternion rotate;
+    tf2::Quaternion rotate_prime;
+    rotate.setRPY(ouster_orientation[0],ouster_orientation[1],ouster_orientation[2]);
+    rotate_prime.setRPY(-ouster_orientation[0],-ouster_orientation[1],-ouster_orientation[2]);
+
     auto sensor_frame = tf_prefix + "/os1_sensor";
     auto imu_frame = tf_prefix + "/os1_imu";
     auto lidar_frame = tf_prefix + "/os1_lidar";
@@ -91,7 +111,6 @@ int main(int argc, char** argv) {
     //auto insertit = send_cloud.begin();
     sensor_msgs::PointCloud2 msg{};
 
-   
     auto batch_and_publish = OS1::batch_to_iter<CloudOS1::iterator>(xyz_lut,
                                   W,
                                   H,
@@ -137,6 +156,12 @@ int main(int argc, char** argv) {
                                   //
                                   [&](auto pt, int ichannel ) {
                                     if ( std::sqrt(pt.x*pt.x + pt.y*pt.y + pt.z*pt.z) >= 0.5 ) {
+                                      tf2::Quaternion q{pt.x,pt.y,pt.z,0};
+                                      auto length = q.length();
+                                      auto uvec = (rotate * (q.normalize()))*rotate_prime;
+                                      pt.x = uvec.x() * length;
+                                      pt.y = uvec.y() * length;
+                                      pt.z = uvec.z() * length;
                                       if ( send_cloud.size() < W*H ) {
                                         send_cloud.push_back(pt);
                                         if ( channel_pcl[ichannel].size() < W*H) {
