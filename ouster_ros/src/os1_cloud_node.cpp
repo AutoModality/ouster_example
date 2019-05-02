@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
 
     auto sensor_frame = tf_prefix + "/os1_sensor";
     auto imu_frame = tf_prefix + "/os1_imu";
-    auto lidar_frame = tf_prefix + "/os1_lidar";
+    auto lidar_frame = tf_prefix + "/body_Level_FLU";
 
     ouster_ros::OS1ConfigSrv cfg{};
     auto client = nh.serviceClient<ouster_ros::OS1ConfigSrv>("/os1_node/os1_config");
@@ -148,6 +148,7 @@ int main(int argc, char** argv) {
                                     for( int i = 0 ; i < OS1::columns_per_buffer; i ++ ) {
                                       channel_pcl[i].clear();
                                     }
+                                    msg.header.frame_id = "body_Level_FLU";
                                     lidar_pub.publish(msg);
                                     am::MeasureDelayStop(ros::this_node::getName() + "/lidar_cb" );
                                   },
