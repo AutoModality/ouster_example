@@ -57,9 +57,9 @@ int main(int argc, char** argv) {
     rotate.setRPY(ouster_orientation[0],ouster_orientation[1],ouster_orientation[2]);
     rotate_prime.setRPY(-ouster_orientation[0],-ouster_orientation[1],-ouster_orientation[2]);
 
-    auto sensor_frame = tf_prefix + "/os1_sensor";
+    auto sensor_frame = tf_prefix + "/body_Level_FLU";
     auto imu_frame = tf_prefix + "/os1_imu";
-    auto lidar_frame = tf_prefix + "/body_Level_FLU";
+    auto lidar_frame = tf_prefix + "/os1_sensor";
 
     ouster_ros::OS1ConfigSrv cfg{};
     auto client = nh.serviceClient<ouster_ros::OS1ConfigSrv>("/os1_node/os1_config");
