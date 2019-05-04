@@ -9,12 +9,10 @@ import math
 
 import argparse
 
-
-
 class Lidar():
     """
     Class that lets us read pointclouds off of the given topic
-
+    Used for verifying the absolute number of points in a cloud
     """
     def __init__(self, scan_topic="/sensor/ouster/pointcloud2", pub_topic="/chatter/",threshold=65536):
         self.scan_sub = rospy.Subscriber(scan_topic, PointCloud2, self.on_scan)
