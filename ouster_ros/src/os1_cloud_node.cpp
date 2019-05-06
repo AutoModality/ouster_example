@@ -51,11 +51,10 @@ int main(int argc, char** argv) {
     //     transformStamped.transform.translation.z = 0;
     // }
 
-    auto ouster_orientation = nh.param<std::vector<float>>("ouster_orientation", {0.0,0.0,0.0});
-    tf2::Quaternion rotate;
-    tf2::Quaternion rotate_prime;
-    rotate.setRPY(ouster_orientation[0],ouster_orientation[1],ouster_orientation[2]);
-    rotate_prime.setRPY(-ouster_orientation[0],-ouster_orientation[1],-ouster_orientation[2]);
+    auto ouster_orientation = nh.param<std::vector<float>>("ouster_orientation", {0.0,0.0,0.0,1.0});
+    tf2::Quaternion rotate(ouster_orientation[0],ouster_orientation[1],ouster_orientation[2],ouster_orientation[3]);
+    tf2::Quaternion rotate_prime(-ouster_orientation[0],-ouster_orientation[1],-ouster_orientation[2],ouster_orientation[3]);
+
 
     auto sensor_frame = tf_prefix + "/body_Level_FLU";
     auto imu_frame = tf_prefix + "/os1_imu";
