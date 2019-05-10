@@ -46,6 +46,7 @@ fp.each_line { |line|
     tdata[0..0+7] = [tmp].pack("Q").unpack("C*")
     data = tdata.pack("C*").unpack("H*")[0]
   else
+    # byebug
     puts "PROBLEM"
   end
 

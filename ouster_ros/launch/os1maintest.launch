@@ -9,9 +9,8 @@
   <arg name="viz" default="false" doc="whether to run a simple visualizer"/>
   <arg name="image" default="false" doc="publish range/intensity/noise image topic"/>
 
-  <node pkg="ouster_ros" name="NC" type="nc.sh" />
-  
-  <node pkg="ouster_ros" name="os1_node" type="os1_node" output="screen" required="true">
+  <node pkg="ouster_ros" name="os1_node" type="os1_node" output="screen" required="true"
+    >
     <param name="~/lidar_mode" type="string" value="$(arg lidar_mode)"/>
     <param name="~/replay" value="$(arg replay)"/>
     <param name="~/os1_hostname" value="$(arg os1_hostname)"/>
