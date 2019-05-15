@@ -39,7 +39,7 @@ int main(int argc, char** argv) {
     ros::NodeHandle nh("~");
     ros::Publisher channel_pubs[OS1::columns_per_buffer];
     std::string pcl_channel;
-    auto imu_topic   = nh.param("imu_topic", std::string{});
+    auto imu_topic   = nh.param("imu_topic", std::string{"/dji_sdk/imu"});
     nh.param<std::string>("pcl_channel", pcl_channel, "pcl_channel");
     auto tf_prefix   = nh.param("tf_prefix", std::string{});
 
