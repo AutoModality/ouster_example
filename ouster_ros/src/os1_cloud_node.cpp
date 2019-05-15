@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
 
     ouster_ros::OS1ConfigSrv cfg{};
     auto client = nh.serviceClient<ouster_ros::OS1ConfigSrv>("/os1_node/os1_config");
-    client.waitForExistence();
+    client.waitForExistence(ros::Duration(10));
     if (!client.call(cfg)) {
         ROS_ERROR("Calling os1 config service failed");
         return EXIT_FAILURE;
@@ -148,8 +148,24 @@ int main(int argc, char** argv) {
 
       return tmp;
     };
+
+    auto external_imu_cb = [&]( const sensor_msgs::Imu::ConstPtr &imu_msg) {
+      auto tmp = std::sqrt( imu_msg->orientation.x*imu_msg->orientation.x +
+                            imu_msg->orientation.y*imu_msg->orientation.y +
+                            imu_msg->orientation.z*imu_msg->orientation.z +
+                            imu_msg->orientation.w*imu_msg->orientation.w );
+      if ( tmp < 0.6 ) {
+        sensor_msgs::Imu tmsg;
+        tmsg.orientation.x = tmsg.orientation.y = tmsg.orientation.z = 0;
+        tmsg.orientation.w = 1;
+        imu_buf.push_back(tmsg);
+      } else {
+        imu_buf.push_back(*imu_msg);
+      }
+    };
+
+    auto external_imu_handler = nh.subscribe<sensor_msgs::Imu>(imu_topic, 100, external_imu_cb );
     
-    send_cloud.clear();
     send_cloud.clear();
     imu_entries.clear();
     auto it = cloud.begin();
@@ -205,8 +221,6 @@ int main(int argc, char** argv) {
                                     }
                                     msg.header.frame_id = "body_Level_FLU";
                                     lidar_pub.publish(msg);
-                                    
-                                    send_cloud.clear();
                                     send_cloud.clear();
                                     imu_entries.clear();
                                     for( int i = 0 ; i < OS1::columns_per_buffer; i ++ ) {
@@ -259,21 +273,8 @@ int main(int argc, char** argv) {
       imu_pub.publish(imu);
     };
 
-    auto external_imu_cb = [&]( const sensor_msgs::Imu::ConstPtr &imu_msg) {
-      auto tmp = std::sqrt( imu_msg->orientation.x*imu_msg->orientation.x +
-                            imu_msg->orientation.y*imu_msg->orientation.y +
-                            imu_msg->orientation.z*imu_msg->orientation.z +
-                            imu_msg->orientation.w*imu_msg->orientation.w );
-      if ( tmp < 0.9 ) {
-        sensor_msgs::Imu msg;
-        msg.orientation.x = msg.orientation.y = msg.orientation.z = 0;
-        msg.orientation.w = 1;
-        imu_buf.push_back(msg);
-      } else {
-        imu_buf.push_back(*imu_msg);
-      }
-    };
 
+    
     auto lidar_packet_sub = nh.subscribe<PacketMsg, const PacketMsg&>(
         "lidar_packets", 2048, lidar_handler);
     auto imu_packet_sub = nh.subscribe<PacketMsg, const PacketMsg&>(
@@ -283,7 +284,7 @@ int main(int argc, char** argv) {
       channel_pubs[i] = nh.advertise<sensor_msgs::PointCloud2 >(pcl_channel + "_" + std::to_string(i)  , 100);
     }
     
-    auto external_imu_handler = nh.subscribe<sensor_msgs::Imu>(imu_topic, 100, external_imu_cb );
+
     
     // publish transforms
     tf2_ros::StaticTransformBroadcaster tf_bcast{};
