@@ -158,8 +158,10 @@ int main(int argc, char** argv) {
         sensor_msgs::Imu tmsg;
         tmsg.orientation.x = tmsg.orientation.y = tmsg.orientation.z = 0;
         tmsg.orientation.w = 1;
+        ROS_INFO_THROTTLE(ros::Duration(1),"Default IMUS");
         imu_buf.push_back(tmsg);
       } else {
+        ROS_INFO_THROTTLE(ros::Duration(1),"Getting IMUs");
         imu_buf.push_back(*imu_msg);
       }
     };
