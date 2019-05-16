@@ -3,8 +3,8 @@ project(ouster_ros)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_FLAGS         "-Wall -Wextra")
-set(CMAKE_CXX_FLAGS_DEBUG   "-O0 -g")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+set(CMAKE_CXX_FLAGS_DEBUG   "-O0 -g -DUSE_TRANSFORM ")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -DUSE_TRANSFORM ")
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(jsoncpp REQUIRED jsoncpp)
