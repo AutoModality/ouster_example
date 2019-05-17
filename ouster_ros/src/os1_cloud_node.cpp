@@ -33,6 +33,10 @@ using PointOS1 = ouster_ros::OS1::PointOS1;
 
 namespace OS1 = ouster::OS1;
 
+void setXYZW(tf2::Quaternion &elem, float x, float y, float z , float w ) {
+  elem = tf2::Quaternion{x,y,z,w};
+}
+
 
 int main(int argc, char** argv) {
     ros::init(argc, argv, "os1_cloud_node");
@@ -115,6 +119,7 @@ int main(int argc, char** argv) {
 
     CloudOS1 cloud{W, H};
     CloudOS1 send_cloud{W*H, 1};
+    tf2::Quaternion tweakq{0,0,0,1};
 
     std::vector<sensor_msgs::Imu> imu_entries(W*H+1);
     boost::circular_buffer<sensor_msgs::Imu> imu_buf(10);
@@ -161,7 +166,7 @@ int main(int argc, char** argv) {
         // ROS_WARN_THROTTLE(1,"Default IMUS");
         imu_buf.push_back(tmsg);
       } else {
-        ROS_WARN_THROTTLE(1,"Getting IMUs");
+        ROS_DEBUG_THROTTLE(1,"Getting IMUs");
         imu_buf.push_back(*imu_msg);
       }
     };
@@ -198,11 +203,22 @@ int main(int argc, char** argv) {
                                           tfimu.transform.rotation.z = imu.orientation.z;
                                           tfimu.transform.rotation.w = imu.orientation.w;
 
-                                          ROS_WARN_STREAM_THROTTLE(0.2,ros::this_node::getName() << "\n" << imu );
+                                          geometry_msgs::TransformStamped tweak{};
+                                          setXYZW(tweakq,tweakq.x(),tweakq.y(),tweakq.z(),tweakq.w());
+
+                                          tweak.transform.rotation.x = tweakq.x();
+                                          tweak.transform.rotation.y = tweakq.y();
+                                          tweak.transform.rotation.z = tweakq.z();
+                                          tweak.transform.rotation.w = tweakq.w();
+
+                                          
+
+                                          ROS_DEBUG_STREAM_THROTTLE(0.2,ros::this_node::getName() << "\n" << imu );
                                           auto b = toMsg(tf2::Vector3{send_cloud[i].x,send_cloud[i].y,send_cloud[i].z});
 #if USE_TRANSFORM
                                           tf2::doTransform( b,outmsg, static_transform );
-                                          tf2::doTransform( outmsg,outmsg, tfimu );
+                                          // tf2::doTransform( outmsg,outmsg, tfimu );
+                                          tf2::doTransform( outmsg,outmsg, tweak );
                                           // tf2::doTransform( b,outmsg, tfimu );
                                           // tf2::doTransform( outmsg,outmsg, static_transform );
                                          
