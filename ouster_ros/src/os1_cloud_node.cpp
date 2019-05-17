@@ -187,22 +187,26 @@ int main(int argc, char** argv) {
                                   [&](uint64_t scan_ts) mutable {
                                     // Last one IMU
                                       for ( uint32_t i = 0; i < send_cloud.size() ; i ++ ) {
-                                          imu_entries[i].orientation.z = 0;
-                                          imu_entries[i+1].orientation.z = 0;
                                           auto imu = average_imus( imu_entries[i],imu_entries[i+1] );
-                                          //auto imu = imu_entries[i];
-                                          // imu.orientation.w *= -1;
-
-                                          geometry_msgs::Vector3 outmsg;
+                                          geometry_msgs::Point outmsg;
                                           tf2::Quaternion qimu(imu.orientation.x,imu.orientation.y,imu.orientation.z,imu.orientation.w);
-                                          tf2::Quaternion qimu_prime(-imu.orientation.x,-imu.orientation.y,-imu.orientation.z,imu.orientation.w);
-
+                                          tf2::Matrix3x3 m(qimu);
+                                          tf2Scalar roll, pitch, yaw;
+                                          
+                                          m.getRPY(roll,pitch,yaw);
+                                          qimu.setRPY( roll,pitch,0 );
+                                          
                                           geometry_msgs::TransformStamped tfimu{};
-                                          tfimu.transform.rotation.x = imu.orientation.x;
-                                          tfimu.transform.rotation.y = imu.orientation.y;
-                                          tfimu.transform.rotation.z = imu.orientation.z;
-                                          tfimu.transform.rotation.w = imu.orientation.w;
 
+                                          tfimu.transform.rotation.x = qimu.x();
+                                          tfimu.transform.rotation.y = qimu.y();
+                                          tfimu.transform.rotation.z = qimu.z();
+                                          tfimu.transform.rotation.w = qimu.w();
+                                          geometry_msgs::Point b;
+                                          b.x = send_cloud[i].x;
+                                          b.y = send_cloud[i].y;
+                                          b.z = send_cloud[i].z;
+#ifdef TWEAK
                                           geometry_msgs::TransformStamped tweak{};
                                           setXYZW(tweakq,tweakq.x(),tweakq.y(),tweakq.z(),tweakq.w());
 
@@ -211,31 +215,17 @@ int main(int argc, char** argv) {
                                           tweak.transform.rotation.z = tweakq.z();
                                           tweak.transform.rotation.w = tweakq.w();
 
-                                          
+                                          tf2::doTransform( b,b, tweak );
+#endif
 
                                           ROS_DEBUG_STREAM_THROTTLE(0.2,ros::this_node::getName() << "\n" << imu );
-                                          auto b = toMsg(tf2::Vector3{send_cloud[i].x,send_cloud[i].y,send_cloud[i].z});
-#if USE_TRANSFORM
-                                          tf2::doTransform( b,outmsg, tweak );
-                                          tf2::doTransform( outmsg,outmsg, static_transform );
+
+                                          tf2::doTransform( b,outmsg, static_transform );
                                           tf2::doTransform( outmsg,outmsg, tfimu );
-
-
-
                                          
                                           send_cloud[i].x = static_cast<float>(outmsg.x);
                                           send_cloud[i].y = static_cast<float>(outmsg.y);
                                           send_cloud[i].z = static_cast<float>(outmsg.z);
-#else
-
-                                          auto tqp = tf2::Quaternion{send_cloud[i].x,send_cloud[i].y,send_cloud[i].z,0};
-                                          auto tq = tf2::Quaternion{tqp.x()/tqp.length(),tqp.y()/tqp.length(),tqp.z()/tqp.length(),0};
-                                          auto qout = static_rotate*(qimu*tq*qimu_prime)*static_rotate_prime;
-                                        
-                                          send_cloud[i].x = static_cast<float>(qout.x())*tqp.length();
-                                          send_cloud[i].y = static_cast<float>(qout.y())*tqp.length();
-                                          send_cloud[i].z = static_cast<float>(qout.z())*tqp.length();
-#endif
                                       }
 
                                     msg = ouster_ros::OS1::cloud_to_cloud_msg(
