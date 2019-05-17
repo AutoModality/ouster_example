@@ -1,5 +1,5 @@
 <launch>
-  <remap from="/os1_cloud_node/points" to="/sensor/ouster/pointcloud2"/>
+  <remap from="/os1_cloud_node/points" to="/sensor/lidar/pointcloud2"/>
   
   <arg name="os1_hostname" default="192.168.1.55" doc="hostname or IP in dotted decimal form of the sensor"/>
   <arg name="os1_udp_dest" default="192.168.1.1" doc="hostname or IP where the sensor will send data packets"/>
