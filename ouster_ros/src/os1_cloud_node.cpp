@@ -92,10 +92,8 @@ int main(int argc, char** argv) {
         rate.sleep();
     }
     if ( !found_xform ) {
-        ROS_ERROR_STREAM("Couldn't get static_transform from base to tf" );
-        ROS_ERROR_STREAM("Using the default transform 0f  0i+0j+0k+1w" );
-        static_transform.transform.rotation.x=static_transform.transform.rotation.y=static_transform.transform.rotation.z=0;
-        static_transform.transform.rotation.w=1;
+        ROS_ERROR_STREAM("Could not get static_transform from base to tf" );
+        return EXIT_FAILURE;
     }
 
     tf2::Quaternion static_rotate(static_transform.transform.rotation.x,

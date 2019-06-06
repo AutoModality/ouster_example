@@ -66,7 +66,7 @@ install(TARGETS ouster_ros os1_node os1_cloud_node ${PROJECT_NAME}
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   )
 
-install(FILES os1.launch
+install(FILES os1.launch os1_bottom_pitch_-90degrees.launch os1_bottom.launch
   DESTINATION "${CATKIN_PACKAGE_SHARE_DESTINATION}"
   )
 
