@@ -12,6 +12,7 @@
 #include <chrono>
 #include <boost/circular_buffer.hpp>
 #include <vector>
+#include <atomic>
 
 #include "ouster/os1_packet.h"
 #include "ouster/os1_util.h"
@@ -19,6 +20,7 @@
 #include "ouster_ros/PacketMsg.h"
 #include "ouster_ros/os1_ros.h"
 #include <latency_testing/DelayStatistics.h>
+#include <latency_testing/Concerns.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/LinearMath/Transform.h>
@@ -26,6 +28,7 @@
 #include <geometry_msgs/PointStamped.h>
 #include <tf2/convert.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+
 
 using PacketMsg = ouster_ros::PacketMsg;
 using CloudOS1 = ouster_ros::OS1::CloudOS1;
@@ -47,8 +50,11 @@ int main(int argc, char** argv) {
     nh.param<std::string>("pcl_channel", pcl_channel, "pcl_channel");
     auto tf_prefix   = nh.param("tf_prefix", std::string{});
 
-    auto base_tf   = nh.param("base_tf", std::string{"base"});
-    auto to_tf     = nh.param("to_tf", std::string{"ouster"});
+    auto base_tf     = nh.param("base_tf", std::string{"base"});
+    auto to_tf       = nh.param("to_tf", std::string{"ouster"});
+    auto imu_timeout = nh.param("imu_timeout", int{5});
+
+    std::atomic_uint  num_imus{0};
 
     am::DEFAULT_UPDATE_DELAY=1;// Update every second
 
@@ -128,6 +134,8 @@ int main(int argc, char** argv) {
       channel_pcl[i].clear();
     }
 
+    auto imu_rate_pub = nh.advertise<latency_testing::Concerns>("imu_rate", 100 );
+
     auto average_imus = []( const sensor_msgs::Imu &first, const sensor_msgs::Imu &second )  {
       sensor_msgs::Imu tmp;
       tf2::Quaternion q1{first.orientation.x,first.orientation.y,first.orientation.z,first.orientation.w};
@@ -155,28 +163,31 @@ int main(int argc, char** argv) {
     };
 
     auto external_imu_cb = [&]( const sensor_msgs::Imu::ConstPtr &imu_msg) {
-      auto tmp = std::sqrt( imu_msg->orientation.x*imu_msg->orientation.x +
-                            imu_msg->orientation.y*imu_msg->orientation.y +
-                            imu_msg->orientation.z*imu_msg->orientation.z +
+                             num_imus ++;
+                             am::MeasureDelayStop(ros::this_node::getName() + "/external_imu_cb" );
+                             am::MeasureDelayStart(ros::this_node::getName() + "/external_imu_cb" );
+                             auto tmp = std::sqrt( imu_msg->orientation.x*imu_msg->orientation.x +
+                                                   imu_msg->orientation.y*imu_msg->orientation.y +
+                                                   imu_msg->orientation.z*imu_msg->orientation.z +
                             imu_msg->orientation.w*imu_msg->orientation.w );
-      if ( tmp < 0.6 ) {
-        sensor_msgs::Imu tmsg;
-        tmsg.orientation.x = tmsg.orientation.y = tmsg.orientation.z = 0;
-        tmsg.orientation.w = 1;
-        // ROS_WARN_THROTTLE(1,"Default IMUS");
-        imu_buf.push_back(tmsg);
-      } else {
-        ROS_DEBUG_THROTTLE(1,"Getting IMUs");
-        imu_buf.push_back(*imu_msg);
-      }
-    };
+                             if ( tmp < 0.6 ) {
+                                 sensor_msgs::Imu tmsg;
+                                 tmsg.orientation.x = tmsg.orientation.y = tmsg.orientation.z = 0;
+                                 tmsg.orientation.w = 1;
+                                 // ROS_WARN_THROTTLE(1,"Default IMUS");
+                                 imu_buf.push_back(tmsg);
+                             } else {
+                                 ROS_DEBUG_THROTTLE(1,"Getting IMUs");
+                                 imu_buf.push_back(*imu_msg);
+                             }
+                           };
 
     auto external_imu_handler = nh.subscribe<sensor_msgs::Imu>(imu_topic, 100, external_imu_cb );
     
     send_cloud.clear();
     imu_entries.clear();
     auto it = cloud.begin();
-    //auto insertit = send_cloud.begin();
+
     sensor_msgs::PointCloud2 msg{};
 
     auto batch_and_publish = OS1::batch_to_iter<CloudOS1::iterator>(xyz_lut,
@@ -309,8 +320,21 @@ int main(int argc, char** argv) {
     for ( int i = 0 ; i < OS1::columns_per_buffer;  i ++ ) { 
       channel_pubs[i] = nh.advertise<sensor_msgs::PointCloud2 >(pcl_channel + "_" + std::to_string(i)  , 100);
     }
-    
 
+    ros::Timer timer = nh.createTimer(ros::Duration(imu_timeout), [&]( const ros::TimerEvent &ev ) {
+                                                                      (void)ev;
+                                                                      auto val = num_imus.load();
+                                                                      if ( val == 0 ) {
+                                                                          am::MeasureDelayStart(ros::this_node::getName() + "/external_imu_cb" );
+                                                                          ros::Duration(imu_timeout).sleep();
+                                                                          am::MeasureDelayStop(ros::this_node::getName() + "/external_imu_cb" );
+                                                                          ROS_ERROR_STREAM("IMU has taken longer than " << imu_timeout << " seconds"  );
+                                                                      } else {
+                                                                          num_imus.store(0);
+                                                                      }
+                                                                  },
+      false
+      );
     
     // publish transforms
     tf2_ros::StaticTransformBroadcaster tf_bcast{};

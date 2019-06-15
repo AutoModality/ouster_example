@@ -1,5 +1,6 @@
 <launch>
   <remap from="/os1_cloud_node/points" to="/sensor/ouster/pointcloud2"/>
+  <node pkg="tf2_ros" type="static_transform_publisher" name="ouster_tf" args="0 0 -0.1 0.707106 -0.707106 0 0 base ouster" />
   
   <arg name="os1_hostname" default="127.0.0.1" doc="hostname or IP in dotted decimal form of the sensor"/>
   <arg name="os1_udp_dest" default="127.0.0.1" doc="hostname or IP where the sensor will send data packets"/>

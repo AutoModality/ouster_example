@@ -31,4 +31,11 @@
     <rosparam param="ouster_orientation">[0.707106,-0.707106,0,0]</rosparam>
   </node>
 
+  <node pkg="latency_testing" type="latency_listener" name="latency_listener" output="screen" >
+    <rosparam param="read_topics">["/delays/os1_cloud_node/external_imu_cb"]</rosparam>
+    <rosparam command="load" file="$(find latency_testing)/launch/listener.yaml" />
+  </node> 
+
+
+  
 </launch>
