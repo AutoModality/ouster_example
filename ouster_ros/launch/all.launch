@@ -31,7 +31,7 @@
   </node>
 
   <node pkg="latency_testing" type="latency_listener" name="latency_listener" output="screen" >
-    <rosparam param="read_topics">["/delays/os1_cloud_node/external_imu_cb"]</rosparam>
+    <rosparam param="read_topics">["/delays/os1_cloud_node/external_imu_cb","/delays/os1_cloud_node/ouster_pcl_delay"]</rosparam>
     <rosparam command="load" file="$(find ouster_ros)/launch/listener.yaml" />
   </node> 
 

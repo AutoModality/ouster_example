@@ -257,6 +257,8 @@ int main(int argc, char** argv) {
                                         }
                                     }
                                     msg.header.frame_id = "body_Level_FLU";
+                                    am::MeasureDelayStop (ros::this_node::getName() + "/ouster_pcl_delay" );
+                                    am::MeasureDelayStart(ros::this_node::getName() + "/ouster_pcl_delay" );
                                     lidar_pub.publish(msg);
                                     send_cloud.clear();
                                     imu_entries.clear();
