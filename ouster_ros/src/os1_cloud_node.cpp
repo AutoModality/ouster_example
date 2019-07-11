@@ -232,9 +232,11 @@ int main(int argc, char** argv) {
                                           b.x = send_cloud[i].x;
                                           b.y = send_cloud[i].y;
                                           b.z = send_cloud[i].z;
-                                          if (publish_raw_pc2) {
-                                            raw_cloud[i] = send_cloud[i];
-                                          }
+                                          // if (publish_raw_pc2) {
+                                          //   raw_cloud[i].x = send_cloud[i].x;
+                                          //   raw_cloud[i].y = send_cloud[i].y;
+                                          //   raw_cloud[i].z = send_cloud[i].x;
+                                          // }
 #ifdef TWEAK
                                           geometry_msgs::TransformStamped tweak{};
                                           setXYZW(tweakq,tweakq.x(),tweakq.y(),tweakq.z(),tweakq.w());
@@ -269,8 +271,7 @@ int main(int argc, char** argv) {
                                                                                     std::chrono::nanoseconds{scan_ts},
                                                                                     lidar_frame
                                                                                     );
-                                      msg_raw.header.frame_id = "body_Level_FLU";
-                                      raw_pub.publish(msg);
+                                      raw_pub.publish(msg_raw);
                                     }
 
                                     for( int i = 0 ; i < OS1::columns_per_buffer; i ++ ) {
