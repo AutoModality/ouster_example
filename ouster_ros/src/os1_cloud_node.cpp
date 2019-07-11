@@ -45,6 +45,9 @@ int main(int argc, char** argv) {
     ros::init(argc, argv, "os1_cloud_node");
     ros::NodeHandle nh("~");
     ros::Publisher channel_pubs[OS1::columns_per_buffer];
+    
+    // ros::Publisher
+    
     std::string pcl_channel;
     auto imu_topic   = nh.param("imu_topic", std::string{"/dji_sdk/imu"});
     nh.param<std::string>("pcl_channel", pcl_channel, "pcl_channel");
@@ -53,7 +56,10 @@ int main(int argc, char** argv) {
     auto base_tf     = nh.param("base_tf", std::string{"base"});
     auto to_tf       = nh.param("to_tf", std::string{"ouster"});
     auto imu_timeout = nh.param("imu_timeout", int{5});
+    auto publish_raw_pc2 = nh.param("publish_raw_pointcloud", bool{false});
 
+    
+    
     std::atomic_uint  num_imus{0};
 
     am::DEFAULT_UPDATE_DELAY=1;// Update every second
@@ -118,13 +124,20 @@ int main(int argc, char** argv) {
         OS1::lidar_mode_of_string(cfg.response.lidar_mode));
 
     auto lidar_pub = nh.advertise<sensor_msgs::PointCloud2>("points", 10);
-    auto imu_pub = nh.advertise<sensor_msgs::Imu>("imu", 100);
+    ros::Publisher raw_pub;
+    if ( publish_raw_pc2 )
+      raw_pub = nh.advertise<sensor_msgs::PointCloud2>("raw_points", 10);
 
+    auto imu_pub   = nh.advertise<sensor_msgs::Imu>("imu", 100);
+    
     auto xyz_lut = OS1::make_xyz_lut(W, H, cfg.response.beam_azimuth_angles,
                                      cfg.response.beam_altitude_angles);
 
     CloudOS1 cloud{W, H};
     CloudOS1 send_cloud{W*H, 1};
+    CloudOS1 raw_cloud{W*H,1};
+
+
     tf2::Quaternion tweakq{0,0,0,1};
 
     std::vector<sensor_msgs::Imu> imu_entries(W*H+1);
@@ -185,10 +198,12 @@ int main(int argc, char** argv) {
     auto external_imu_handler = nh.subscribe<sensor_msgs::Imu>(imu_topic, 100, external_imu_cb );
     
     send_cloud.clear();
+    raw_cloud.clear();
     imu_entries.clear();
     auto it = cloud.begin();
 
     sensor_msgs::PointCloud2 msg{};
+    sensor_msgs::PointCloud2 msg_raw{};
 
     auto batch_and_publish = OS1::batch_to_iter<CloudOS1::iterator>(xyz_lut,
                                   W,
@@ -217,6 +232,9 @@ int main(int argc, char** argv) {
                                           b.x = send_cloud[i].x;
                                           b.y = send_cloud[i].y;
                                           b.z = send_cloud[i].z;
+                                          if (publish_raw_pc2) {
+                                            raw_cloud[i] = send_cloud[i];
+                                          }
 #ifdef TWEAK
                                           geometry_msgs::TransformStamped tweak{};
                                           setXYZW(tweakq,tweakq.x(),tweakq.y(),tweakq.z(),tweakq.w());
@@ -245,6 +263,16 @@ int main(int argc, char** argv) {
                                                                               lidar_frame
                                                                               );
 
+                                    if (publish_raw_pc2) {
+                                      msg_raw = ouster_ros::OS1::cloud_to_cloud_msg(
+                                                                                    raw_cloud,
+                                                                                    std::chrono::nanoseconds{scan_ts},
+                                                                                    lidar_frame
+                                                                                    );
+                                      msg_raw.header.frame_id = "body_Level_FLU";
+                                      raw_pub.publish(msg);
+                                    }
+
                                     for( int i = 0 ; i < OS1::columns_per_buffer; i ++ ) {
                                         if ( channel_pubs[i].getNumSubscribers() >= 1 ) {
                                             // ROS_INFO_STREAM("Have a subscriber for channel " << i );
@@ -261,6 +289,7 @@ int main(int argc, char** argv) {
                                     am::MeasureDelayStart(ros::this_node::getName() + "/ouster_pcl_delay" );
                                     lidar_pub.publish(msg);
                                     send_cloud.clear();
+                                    raw_cloud.clear();
                                     imu_entries.clear();
                                     for( int i = 0 ; i < OS1::columns_per_buffer; i ++ ) {
                                         channel_pcl[i].clear();
@@ -276,6 +305,7 @@ int main(int argc, char** argv) {
                                     if ( std::sqrt(pt.x*pt.x + pt.y*pt.y + pt.z*pt.z) >= 0.5 ) {
                                       if ( send_cloud.size() < W*H ) {
                                         send_cloud.push_back(pt);
+                                        raw_cloud.push_back(pt);
                                         if ( channel_pcl[ichannel].size() < W*H) {
                                           channel_pcl[ichannel].push_back(pt);
                                         }
@@ -323,6 +353,8 @@ int main(int argc, char** argv) {
       channel_pubs[i] = nh.advertise<sensor_msgs::PointCloud2 >(pcl_channel + "_" + std::to_string(i)  , 100);
     }
 
+    
+    
     ros::Timer timer = nh.createTimer(ros::Duration(imu_timeout), [&]( const ros::TimerEvent &ev ) {
                                                                       (void)ev;
                                                                       auto val = num_imus.load();
@@ -331,6 +363,13 @@ int main(int argc, char** argv) {
                                                                           ros::Duration(imu_timeout).sleep();
                                                                           am::MeasureDelayStop(ros::this_node::getName() + "/external_imu_cb" );
                                                                           ROS_ERROR_STREAM("IMU has taken longer than " << imu_timeout << " seconds"  );
+                                                                          // Use a default unity IMU value
+                                                                          sensor_msgs::Imu tmsg;
+                                                                          tmsg.orientation.x = tmsg.orientation.y = tmsg.orientation.z = 0;
+                                                                          tmsg.orientation.w = 1;
+                                                                          // ROS_WARN_THROTTLE(1,"Default IMUS");
+                                                                          imu_buf.push_back(tmsg);
+                                                                          num_imus ++;
                                                                       } else {
                                                                           num_imus.store(0);
                                                                       }
