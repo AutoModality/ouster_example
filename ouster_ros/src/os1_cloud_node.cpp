@@ -28,7 +28,7 @@
 #include <geometry_msgs/PointStamped.h>
 #include <tf2/convert.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-
+#include <latency_testing/DelayStatistics.h>
 
 using PacketMsg = ouster_ros::PacketMsg;
 using CloudOS1 = ouster_ros::OS1::CloudOS1;
@@ -50,6 +50,7 @@ int main(int argc, char** argv) {
     
     std::string pcl_channel;
     auto imu_topic   = nh.param("imu_topic", std::string{"/dji_sdk/imu"});
+    ROS_ERROR_STREAM("We are using topic " << imu_topic );
     nh.param<std::string>("pcl_channel", pcl_channel, "pcl_channel");
     auto tf_prefix   = nh.param("tf_prefix", std::string{});
 
@@ -124,12 +125,8 @@ int main(int argc, char** argv) {
         OS1::lidar_mode_of_string(cfg.response.lidar_mode));
 
     auto lidar_pub = nh.advertise<sensor_msgs::PointCloud2>("points", 10);
-    ros::Publisher raw_pub;
-    if ( publish_raw_pc2 )
-      raw_pub = nh.advertise<sensor_msgs::PointCloud2>("raw_points", 10);
+    auto imu_pub = nh.advertise<sensor_msgs::Imu>("imu", 100);
 
-    auto imu_pub   = nh.advertise<sensor_msgs::Imu>("imu", 100);
-    
     auto xyz_lut = OS1::make_xyz_lut(W, H, cfg.response.beam_azimuth_angles,
                                      cfg.response.beam_altitude_angles);
 
@@ -146,7 +143,8 @@ int main(int argc, char** argv) {
     for( int i = 0 ; i < OS1::columns_per_buffer; i ++ ) {
       channel_pcl[i].clear();
     }
-
+    ROS_ERROR_STREAM("Columns per buffer:" << OS1::columns_per_buffer );
+    
     auto imu_rate_pub = nh.advertise<latency_testing::Concerns>("imu_rate", 100 );
 
     auto average_imus = []( const sensor_msgs::Imu &first, const sensor_msgs::Imu &second )  {
@@ -201,29 +199,25 @@ int main(int argc, char** argv) {
     raw_cloud.clear();
     imu_entries.clear();
     auto it = cloud.begin();
-
     sensor_msgs::PointCloud2 msg{};
     sensor_msgs::PointCloud2 msg_raw{};
 
     auto batch_and_publish = OS1::batch_to_iter<CloudOS1::iterator>(xyz_lut,
                                   W,
                                   H,
-                                  {},
-                                  &PointOS1::make,
-                                  [&](uint64_t scan_ts) mutable {
-                                    // Last one IMU
+                                  {},                                  
+								  &PointOS1::make,
+        [&](uint64_t scan_ts) mutable {
                                       for ( uint32_t i = 0; i < send_cloud.size() ; i ++ ) {
                                           auto imu = average_imus( imu_entries[i],imu_entries[i+1] );
                                           geometry_msgs::Point outmsg;
                                           tf2::Quaternion qimu(imu.orientation.x,imu.orientation.y,imu.orientation.z,imu.orientation.w);
                                           tf2::Matrix3x3 m(qimu);
                                           tf2Scalar roll, pitch, yaw;
-                                          
                                           m.getRPY(roll,pitch,yaw);
                                           qimu.setRPY( roll,pitch,0 );
-                                          
                                           geometry_msgs::TransformStamped tfimu{};
-
+            // msg = ouster_ros::OS1::cloud_to_cloud_msg(cloud, std::chrono::nanoseconds{scan_ts}, lidar_frame);
                                           tfimu.transform.rotation.x = qimu.x();
                                           tfimu.transform.rotation.y = qimu.y();
                                           tfimu.transform.rotation.z = qimu.z();
@@ -232,23 +226,11 @@ int main(int argc, char** argv) {
                                           b.x = send_cloud[i].x;
                                           b.y = send_cloud[i].y;
                                           b.z = send_cloud[i].z;
-#ifdef TWEAK
-                                          geometry_msgs::TransformStamped tweak{};
-                                          setXYZW(tweakq,tweakq.x(),tweakq.y(),tweakq.z(),tweakq.w());
-
-                                          tweak.transform.rotation.x = tweakq.x();
-                                          tweak.transform.rotation.y = tweakq.y();
-                                          tweak.transform.rotation.z = tweakq.z();
-                                          tweak.transform.rotation.w = tweakq.w();
-
-                                          tf2::doTransform( b,b, tweak );
-#endif
-
-                                          ROS_DEBUG_STREAM_THROTTLE(0.2,ros::this_node::getName() << "\n" << imu );
-
+                                          ROS_DEBUG_STREAM_THROTTLE(1, ros::this_node::getName() << " applied IMU" );
                                           tf2::doTransform( b,outmsg, static_transform );
                                           tf2::doTransform( outmsg,outmsg, tfimu );
-                                         
+
+
                                           send_cloud[i].x = static_cast<float>(outmsg.x);
                                           send_cloud[i].y = static_cast<float>(outmsg.y);
                                           send_cloud[i].z = static_cast<float>(outmsg.z);
@@ -260,71 +242,42 @@ int main(int argc, char** argv) {
                                                                               lidar_frame
                                                                               );
 
-                                    if (publish_raw_pc2) {
-                                      msg_raw = ouster_ros::OS1::cloud_to_cloud_msg(
-                                                                                    raw_cloud,
-                                                                                    std::chrono::nanoseconds{scan_ts},
-                                                                                    lidar_frame
-                                                                                    );
-                                      msg_raw.header.frame_id = "body_Level_FLU";
-                                      raw_pub.publish(msg_raw);
-                                    }
+          msg.header.frame_id = "body_Level_FLU";
+          am::MeasureDelayStop (ros::this_node::getName() + "/ouster_pcl_delay" );
+          am::MeasureDelayStart(ros::this_node::getName() + "/ouster_pcl_delay" );
+          lidar_pub.publish(msg);
+          send_cloud.clear();
+          imu_entries.clear();
+          
+        },
+        //
+        // Callback on Channel pt
+        //
+        [&](auto pt, int ichannel ) {
+          if ( std::sqrt(pt.x*pt.x + pt.y*pt.y + pt.z*pt.z) >= 0.5 ) {
+            // ROS_ERROR_THROTTLE(1, "Called here !");
+            if ( send_cloud.size() < W*H ) {
+              send_cloud.push_back(pt);
+              if ( send_cloud.size() > 1000 ) {
+                ROS_INFO_STREAM_THROTTLE(1, "cloud cap:" << send_cloud.points.capacity() << " size:" << send_cloud.size() );
+              }
+              if ( imu_buf.empty() ) {
+                  sensor_msgs::Imu a;
+                  a.orientation.w = 1;
+                  imu_entries.push_back(a);
+              } else {
+                if ( !imu_buf.empty() ) 
+                  imu_entries.push_back(imu_buf.back());
+              }
+            } else {
+              ROS_ERROR_STREAM_THROTTLE(1, "Size of send_cloud:" << send_cloud.size() );
+            }
+          }
+        });
 
-                                    for( int i = 0 ; i < OS1::columns_per_buffer; i ++ ) {
-                                        if ( channel_pubs[i].getNumSubscribers() >= 1 ) {
-                                            // ROS_INFO_STREAM("Have a subscriber for channel " << i );
-                                            auto tmp = ouster_ros::OS1::cloud_to_cloud_msg(
-                                                                                           channel_pcl[i],
-                                                                                           std::chrono::nanoseconds{scan_ts},
-                                                                                           lidar_frame
-                                                                                           );
-                                            tmp.header.frame_id = "body_Level_FLU";
-                                            channel_pubs[i].publish(tmp);
-                                        }
-                                    }
-                                    msg.header.frame_id = "body_Level_FLU";
-                                    am::MeasureDelayStop (ros::this_node::getName() + "/ouster_pcl_delay" );
-                                    am::MeasureDelayStart(ros::this_node::getName() + "/ouster_pcl_delay" );
-                                    lidar_pub.publish(msg);
-                                    send_cloud.clear();
-                                    raw_cloud.clear();
-                                    imu_entries.clear();
-                                    for( int i = 0 ; i < OS1::columns_per_buffer; i ++ ) {
-                                        channel_pcl[i].clear();
-                                    }
-
-                                      
-                                    am::MeasureDelayStop(ros::this_node::getName() + "/lidar_cb" );
-                                  },
-                                  //
-                                  // Callback on Channel pt
-                                  //
-                                  [&](auto pt, int ichannel ) {
-                                    if ( std::sqrt(pt.x*pt.x + pt.y*pt.y + pt.z*pt.z) >= 0.5 ) {
-                                      if ( send_cloud.size() < W*H ) {
-                                        send_cloud.push_back(pt);
-                                        raw_cloud.push_back(pt);
-                                        if ( channel_pcl[ichannel].size() < W*H) {
-                                          channel_pcl[ichannel].push_back(pt);
-                                        }
-                                        if ( imu_buf.empty() ) {
-                                            sensor_msgs::Imu a;
-                                            a.orientation.w = 1;
-                                            imu_entries.push_back(a);
-                                        } else {
-                                          if ( !imu_buf.empty() ) 
-                                            imu_entries.push_back(imu_buf.back());
-                                        }
-                                      } else {
-                                        ROS_ERROR("Size is greater than cloud capacity\n");
-                                      }
-                                    }                                    
-                                  }
-                             );
-
+    
     auto lidar_handler = [&](const PacketMsg& pm) mutable {
-      am::MeasureDelayStart(ros::this_node::getName() + "/lidar_cb" );
-      batch_and_publish(pm.buf.data(), it );
+        batch_and_publish(pm.buf.data(), it);
     };
 
     auto imu_handler = [&](const PacketMsg& p) {
@@ -336,24 +289,15 @@ int main(int argc, char** argv) {
         imu.orientation.x = imu.orientation.y = imu.orientation.z = 0;
         imu.orientation.w=1;
       }
-      // imu_buf.push_back(imu);
       imu_pub.publish(imu);
     };
 
-
-    
     auto lidar_packet_sub = nh.subscribe<PacketMsg, const PacketMsg&>(
         "lidar_packets", 2048, lidar_handler);
     auto imu_packet_sub = nh.subscribe<PacketMsg, const PacketMsg&>(
         "imu_packets", 100, imu_handler);
 
-    for ( int i = 0 ; i < OS1::columns_per_buffer;  i ++ ) { 
-      channel_pubs[i] = nh.advertise<sensor_msgs::PointCloud2 >(pcl_channel + "_" + std::to_string(i)  , 100);
-    }
-
-    
-    
-    ros::Timer timer = nh.createTimer(ros::Duration(imu_timeout), [&]( const ros::TimerEvent &ev ) {
+    ros::Timer timer = nh.createTimer(ros::Duration(0.1), [&]( const ros::TimerEvent &ev ) {
                                                                       (void)ev;
                                                                       auto val = num_imus.load();
                                                                       if ( val == 0 ) {
@@ -361,20 +305,20 @@ int main(int argc, char** argv) {
                                                                           ros::Duration(imu_timeout).sleep();
                                                                           am::MeasureDelayStop(ros::this_node::getName() + "/external_imu_cb" );
                                                                           ROS_ERROR_STREAM("IMU has taken longer than " << imu_timeout << " seconds"  );
-                                                                          // Use a default unity IMU value
                                                                           sensor_msgs::Imu tmsg;
                                                                           tmsg.orientation.x = tmsg.orientation.y = tmsg.orientation.z = 0;
                                                                           tmsg.orientation.w = 1;
-                                                                          // ROS_WARN_THROTTLE(1,"Default IMUS");
                                                                           imu_buf.push_back(tmsg);
                                                                           num_imus ++;
                                                                       } else {
-                                                                          num_imus.store(0);
+                                                                          sensor_msgs::Imu imu;
+																		  imu.orientation.x = imu.orientation.y = imu.orientation.z = 0;
+        																  imu.orientation.w=1;
+																		  imu_pub.publish(imu);
                                                                       }
                                                                   },
       false
       );
-    
     // publish transforms
     tf2_ros::StaticTransformBroadcaster tf_bcast{};
 
@@ -388,4 +332,3 @@ int main(int argc, char** argv) {
 
     return EXIT_SUCCESS;
 }
-                                        

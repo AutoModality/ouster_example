@@ -128,6 +128,7 @@ std::function<void(const uint8_t*, iterator_type it)> batch_to_iter(
                 const uint8_t* px_buf = OS1::nth_px(ipx, col_buf);
                 uint32_t r = OS1::px_range(px_buf);
                 int ind = 3 * (idx + ipx);
+
                 // x, y, z(m), i, ts, reflectivity, ring, noise, range (mm)
                 auto tmp = c(r * 0.001f * xyz_lut[ind + 0],
                                   r * 0.001f * xyz_lut[ind + 1],
@@ -136,8 +137,9 @@ std::function<void(const uint8_t*, iterator_type it)> batch_to_iter(
                                   OS1::px_reflectivity(px_buf), ipx,
                                   OS1::px_noise_photons(px_buf), r);
                 it[idx + ipx] = tmp;
-                g(tmp, (ipx + 2)/4  ); // @TODO Hackish but Ouster didn't write the driver to
-                                       // accomodate their 16 channel LIDAR
+                g(tmp, idx + ipx );
+                // g(tmp, (ipx + 2)/4  ); // @TODO Hackish but Ouster didn't write the driver to
+                //                        // accomodate their 16 channel LIDAR
             }
         }
     };

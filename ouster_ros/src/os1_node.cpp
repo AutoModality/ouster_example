@@ -149,9 +149,8 @@ int main(int argc, char** argv) {
     auto udp_dest = nh.param("os1_udp_dest", std::string{});
     auto lidar_port = nh.param("os1_lidar_port", 7501);
     auto imu_port = nh.param("os1_imu_port", 7502);
-    auto timestamp_mode = nh.param<std::string>("timestamp_mode", "TIME_FROM_PTP_1588");
     auto replay = nh.param("replay", false);
-    auto lidar_mode = nh.param<std::string>("lidar_mode", OS1::to_string(OS1::MODE_1024x10));
+    auto lidar_mode = nh.param("lidar_mode", std::string{});
 
     // fall back to metadata file name based on hostname, if available
     auto meta_file = nh.param("metadata", std::string{});
@@ -196,9 +195,7 @@ int main(int argc, char** argv) {
 
         auto cli = OS1::init_client(hostname, udp_dest,
                                     OS1::lidar_mode_of_string(lidar_mode),
-                                    lidar_port, imu_port,
-                                    timestamp_mode
-                                    );
+                                    lidar_port, imu_port);
 
         if (!cli) {
             ROS_ERROR("Failed to initialize sensor at: %s", hostname.c_str());
