@@ -241,12 +241,18 @@ int main(int argc, char** argv) {
 											   static_transform.transform.rotation.z,
 											   static_transform.transform.rotation.w,
 					      }*tf2::Quaternion{tfimu.transform.rotation.x,tfimu.transform.rotation.y,tfimu.transform.rotation.z,tfimu.transform.rotation.w};
-					      geometry_msgs::TransformStamped gts;
-					      gts.transform.rotation.x = ntransform.x();
-					      gts.transform.rotation.y = ntransform.y();
-					      gts.transform.rotation.z = ntransform.z();
-					      gts.transform.rotation.w = ntransform.w();
-					      tf2::doTransform( gmpt,outmsg, gts );
+                                              tf2::Quaternion result = ntransform * \
+                                                                       tf2::Quaternion{send_cloud[i].x,send_cloud[i].y,send_cloud[i].z} * 
+                                                                       tf2::Quaternion{-ntransform.x(),-ntransform.y(),-ntransform.z(),ntransform.w()};
+                                              send_cloud[i].x = result.x();
+                                              send_cloud[i].y = result.y();
+                                              send_cloud[i].z = result.z();
+					      // geometry_msgs::TransformStamped gts;
+					      // gts.transform.rotation.x = ntransform.x();
+					      // gts.transform.rotation.y = ntransform.y();
+					      // gts.transform.rotation.z = ntransform.z();
+					      // gts.transform.rotation.w = ntransform.w();
+					      // tf2::doTransform( gmpt,outmsg, gts );
 					      // tf2::doTransform( gmpt,outmsg, static_transform );
 					      // tf2::doTransform( outmsg,outmsg, tfimu );;
 					    } else {
