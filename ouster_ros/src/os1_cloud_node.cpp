@@ -48,18 +48,17 @@ int main(int argc, char** argv) {
     
     // ros::Publisher
     
-    std::string pcl_channel;
-    auto imu_topic   = nh.param("imu_topic", std::string{"/dji_sdk/imu"});
-    auto pcl_channel           = nh.param("pcl_channel", std::string{"/sensor/lidar"});
-    auto tf_prefix   = nh.param("tf_prefix", std::string{});
+    auto imu_topic        = nh.param("imu_topic", std::string{"/dji_sdk/imu"});
+    auto pcl_channel      = nh.param("pcl_channel", std::string{"/sensor/lidar"});
+    auto tf_prefix        = nh.param("tf_prefix", std::string{});
 
-    auto base_tf     = nh.param("base_tf", std::string{"base"});
-    auto to_tf       = nh.param("to_tf", std::string{"ouster"});
-    auto imu_timeout = nh.param("imu_timeout", int{5});
-    auto publish_raw_pc2 = nh.param("publish_raw_pointcloud", bool{false});
-    auto organized             = nh.param("organized", bool{false});
-    auto raw                   = nh.param("raw"      , bool{false} ); // Use the raw point cloud
-    auto min_distance          = nh.param("min_distance", double{0.5} );
+    auto base_tf          = nh.param("base_tf", std::string{"base"});
+    auto to_tf            = nh.param("to_tf", std::string{"ouster"});
+    auto imu_timeout      = nh.param("imu_timeout", int{5});
+    auto publish_raw_pc2  = nh.param("publish_raw_pointcloud", bool{false});
+    auto organized        = nh.param("organized", bool{false});
+    auto raw              = nh.param("raw"      , bool{false} ); // Use the raw point cloud
+    auto min_distance     = nh.param("min_distance", double{0.5} );
     
     
     std::atomic_uint  num_imus{0};
@@ -255,7 +254,7 @@ int main(int argc, char** argv) {
                                                                               lidar_frame
                                                                               );
                                         msg_raw.header.frame_id = "body_Level_FLU";
-                                        raw_pub.publish(msg_raw);
+                                        // raw_pub.publish(msg_raw);
                                     }
 
           msg.header.frame_id = "body_Level_FLU";
