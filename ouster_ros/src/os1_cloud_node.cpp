@@ -209,11 +209,12 @@ int main(int argc, char** argv) {
 								  &PointOS1::make,
         [&](uint64_t scan_ts) mutable {
                                     CloudOS1 *thiscloud;
-                                    if ( !organized ) {
-                                      thiscloud = &send_cloud;
-                                    } else {
-                                      thiscloud = &cloud;
-                                    }
+				    thiscloud = &cloud;
+                                    // if ( !organized ) {
+                                    //   thiscloud = &send_cloud;
+                                    // } else {
+                                    //   thiscloud = &cloud;
+                                    // }
                                     for ( uint32_t i = 0; i < (*thiscloud).size() ; i ++ ) {
                                           auto imu = average_imus( imu_entries[i],imu_entries[i+1] );
                                           geometry_msgs::Point outmsg;
@@ -223,19 +224,26 @@ int main(int argc, char** argv) {
                                           m.getRPY(roll,pitch,yaw);
                                           qimu.setRPY( roll,pitch,0 );
                                           geometry_msgs::TransformStamped tfimu{};
-            // msg = ouster_ros::OS1::cloud_to_cloud_msg(cloud, std::chrono::nanoseconds{scan_ts}, lidar_frame);
+					  // msg = ouster_ros::OS1::cloud_to_cloud_msg(cloud, std::chrono::nanoseconds{scan_ts}, lidar_frame);
                                           tfimu.transform.rotation.x = qimu.x();
                                           tfimu.transform.rotation.y = qimu.y();
                                           tfimu.transform.rotation.z = qimu.z();
                                           tfimu.transform.rotation.w = qimu.w();
-                                          geometry_msgs::Point b;
-                                          b.x = send_cloud[i].x;
-                                          b.y = send_cloud[i].y;
-                                          b.z = send_cloud[i].z;
+                                          geometry_msgs::Point gmpt;
+                                          gmpt.x = send_cloud[i].x;
+                                          gmpt.y = send_cloud[i].y;
+                                          gmpt.z = send_cloud[i].z;
                                           ROS_DEBUG_STREAM_THROTTLE(1, ros::this_node::getName() << " applied IMU" );
-                                          tf2::doTransform( b,outmsg, static_transform );
-                                          tf2::doTransform( outmsg,outmsg, tfimu );
-
+					  if ( !raw ) {
+					    if (std::sqrt(gmpt.x*gmpt.x + gmpt.y*gmpt.y + gmpt.z*gmpt.z) >= min_distance) {
+					      tf2::doTransform( gmpt,outmsg, static_transform );
+					      tf2::doTransform( outmsg,outmsg, tfimu );;
+					    } else {
+					      outmsg.x = outmsg.y = outmsg.z = 0.0;
+					    }
+					  } else {
+					    outmsg = gmpt;
+					  }
 
                                         (*thiscloud)[i].x = static_cast<float>(outmsg.x);
                                         (*thiscloud)[i].y = static_cast<float>(outmsg.y);
@@ -250,9 +258,9 @@ int main(int argc, char** argv) {
                                     if (publish_raw_pc2) {
                                         msg_raw = ouster_ros::OS1::cloud_to_cloud_msg(
                                                                                       raw_cloud,
-                                                                              std::chrono::nanoseconds{scan_ts},
-                                                                              lidar_frame
-                                                                              );
+										      std::chrono::nanoseconds{scan_ts},
+										      lidar_frame
+										      );
                                         msg_raw.header.frame_id = "body_Level_FLU";
                                         // raw_pub.publish(msg_raw);
                                     }
