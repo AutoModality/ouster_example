@@ -230,9 +230,9 @@ int main(int argc, char** argv) {
                                           tfimu.transform.rotation.z = qimu.z();
                                           tfimu.transform.rotation.w = qimu.w();
                                           geometry_msgs::Point gmpt;
-                                          gmpt.x = send_cloud[i].x;
-                                          gmpt.y = send_cloud[i].y;
-                                          gmpt.z = send_cloud[i].z;
+                                          gmpt.x = (*thiscloud)[i].x;
+                                          gmpt.y = (*thiscloud)[i].y;
+                                          gmpt.z = (*thiscloud)[i].z;
                                           ROS_DEBUG_STREAM_THROTTLE(1, ros::this_node::getName() << " applied IMU" );
 					  if ( !raw ) {
 					    if (std::sqrt(gmpt.x*gmpt.x + gmpt.y*gmpt.y + gmpt.z*gmpt.z) >= min_distance) {
@@ -242,19 +242,11 @@ int main(int argc, char** argv) {
 											   static_transform.transform.rotation.w,
 					      }*tf2::Quaternion{tfimu.transform.rotation.x,tfimu.transform.rotation.y,tfimu.transform.rotation.z,tfimu.transform.rotation.w};
                                               tf2::Quaternion result = ntransform * \
-                                                                       tf2::Quaternion{send_cloud[i].x,send_cloud[i].y,send_cloud[i].z} * 
+                                                                       tf2::Quaternion{(*thiscloud)[i].x,(*thiscloud)[i].y,(*thiscloud)[i].z} * 
                                                                        tf2::Quaternion{-ntransform.x(),-ntransform.y(),-ntransform.z(),ntransform.w()};
-                                              send_cloud[i].x = result.x();
-                                              send_cloud[i].y = result.y();
-                                              send_cloud[i].z = result.z();
-					      // geometry_msgs::TransformStamped gts;
-					      // gts.transform.rotation.x = ntransform.x();
-					      // gts.transform.rotation.y = ntransform.y();
-					      // gts.transform.rotation.z = ntransform.z();
-					      // gts.transform.rotation.w = ntransform.w();
-					      // tf2::doTransform( gmpt,outmsg, gts );
-					      // tf2::doTransform( gmpt,outmsg, static_transform );
-					      // tf2::doTransform( outmsg,outmsg, tfimu );;
+                                              (*thiscloud)[i].x = result.x();
+                                              (*thiscloud)[i].y = result.y();
+                                              (*thiscloud)[i].z = result.z();
 					    } else {
 					      outmsg.x = outmsg.y = outmsg.z = 0.0;
 					    }
