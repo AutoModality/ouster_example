@@ -50,15 +50,16 @@ int main(int argc, char** argv) {
     
     std::string pcl_channel;
     auto imu_topic   = nh.param("imu_topic", std::string{"/dji_sdk/imu"});
-    ROS_ERROR_STREAM("We are using topic " << imu_topic );
-    nh.param<std::string>("pcl_channel", pcl_channel, "pcl_channel");
+    auto pcl_channel           = nh.param("pcl_channel", std::string{"/sensor/lidar"});
     auto tf_prefix   = nh.param("tf_prefix", std::string{});
 
     auto base_tf     = nh.param("base_tf", std::string{"base"});
     auto to_tf       = nh.param("to_tf", std::string{"ouster"});
     auto imu_timeout = nh.param("imu_timeout", int{5});
     auto publish_raw_pc2 = nh.param("publish_raw_pointcloud", bool{false});
-
+    auto organized             = nh.param("organized", bool{false});
+    auto raw                   = nh.param("raw"      , bool{false} ); // Use the raw point cloud
+    auto min_distance          = nh.param("min_distance", double{0.5} );
     
     
     std::atomic_uint  num_imus{0};
@@ -140,9 +141,9 @@ int main(int argc, char** argv) {
     std::vector<sensor_msgs::Imu> imu_entries(W*H+1);
     boost::circular_buffer<sensor_msgs::Imu> imu_buf(10);
     std::vector<CloudOS1> channel_pcl(OS1::columns_per_buffer, CloudOS1{W*H,1});
-    for( int i = 0 ; i < OS1::columns_per_buffer; i ++ ) {
-      channel_pcl[i].clear();
-    }
+    // for( int i = 0 ; i < OS1::columns_per_buffer; i ++ ) {
+    //   channel_pcl[i].clear();
+    // }
     ROS_ERROR_STREAM("Columns per buffer:" << OS1::columns_per_buffer );
     
     auto imu_rate_pub = nh.advertise<latency_testing::Concerns>("imu_rate", 100 );
@@ -208,7 +209,13 @@ int main(int argc, char** argv) {
                                   {},                                  
 								  &PointOS1::make,
         [&](uint64_t scan_ts) mutable {
-                                      for ( uint32_t i = 0; i < send_cloud.size() ; i ++ ) {
+                                    CloudOS1 *thiscloud;
+                                    if ( !organized ) {
+                                      thiscloud = &send_cloud;
+                                    } else {
+                                      thiscloud = &cloud;
+                                    }
+                                    for ( uint32_t i = 0; i < (*thiscloud).size() ; i ++ ) {
                                           auto imu = average_imus( imu_entries[i],imu_entries[i+1] );
                                           geometry_msgs::Point outmsg;
                                           tf2::Quaternion qimu(imu.orientation.x,imu.orientation.y,imu.orientation.z,imu.orientation.w);
@@ -231,16 +238,25 @@ int main(int argc, char** argv) {
                                           tf2::doTransform( outmsg,outmsg, tfimu );
 
 
-                                          send_cloud[i].x = static_cast<float>(outmsg.x);
-                                          send_cloud[i].y = static_cast<float>(outmsg.y);
-                                          send_cloud[i].z = static_cast<float>(outmsg.z);
+                                        (*thiscloud)[i].x = static_cast<float>(outmsg.x);
+                                        (*thiscloud)[i].y = static_cast<float>(outmsg.y);
+                                        (*thiscloud)[i].z = static_cast<float>(outmsg.z);
                                       }
 
                                     msg = ouster_ros::OS1::cloud_to_cloud_msg(
-                                                                              send_cloud,
+                                                                              *thiscloud,
                                                                               std::chrono::nanoseconds{scan_ts},
                                                                               lidar_frame
                                                                               );
+                                    if (publish_raw_pc2) {
+                                        msg_raw = ouster_ros::OS1::cloud_to_cloud_msg(
+                                                                                      raw_cloud,
+                                                                              std::chrono::nanoseconds{scan_ts},
+                                                                              lidar_frame
+                                                                              );
+                                        msg_raw.header.frame_id = "body_Level_FLU";
+                                        raw_pub.publish(msg_raw);
+                                    }
 
           msg.header.frame_id = "body_Level_FLU";
           am::MeasureDelayStop (ros::this_node::getName() + "/ouster_pcl_delay" );
