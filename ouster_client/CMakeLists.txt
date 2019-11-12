@@ -14,21 +14,35 @@ if (DEFINED CATKIN_DEVEL_PREFIX)
   message(STATUS "Catkin env set, compiling ${PROJECT_NAME} with ROS")
 
   catkin_package(
-    INCLUDE_DIRS include
+    INCLUDE_DIRS include include/ouster
     LIBRARIES ouster_client
     DEPENDS jsoncpp
     CATKIN_DEPENDS
-  )
+    )
 else()
   message(STATUS "Catkin env not set, compiling ${PROJECT_NAME} without ROS")
 endif()
 
+
 add_library(ouster_client STATIC
   src/os1.cpp
-  src/os1_util.cpp)
+  src/os1_util.cpp
+  )
+
 target_link_libraries(ouster_client jsoncpp)
-target_include_directories(ouster_client PUBLIC include)
+target_include_directories(ouster_client PUBLIC include ${catkin_INCLUDE_DIRS})
 target_include_directories(ouster_client SYSTEM PRIVATE ${jsoncpp_INCLUDE_DIRS})
 
 add_executable(ouster_client_example src/main.cpp)
 target_link_libraries(ouster_client_example ouster_client)
+
+install(DIRECTORY include/ouster/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+)
+
+install(TARGETS ouster_client ouster_client_example
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+

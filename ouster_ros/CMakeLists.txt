@@ -19,7 +19,6 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_conversions
   roscpp
   ouster_client
-  # ouster_viz                   
   tf2
   tf2_ros
   tf2_geometry_msgs
@@ -41,8 +40,10 @@ catkin_package(
   CATKIN_DEPENDS
     roscpp message_runtime pcl_ros
     std_msgs sensor_msgs geometry_msgs
-    ouster_client# ouster_viz
+    ouster_client
 )
+
+include_directories(${catkin_INCLUDE_DIRS} ../ouster_client/include )
 
 add_library(ouster_ros STATIC src/os1_ros.cpp)
 target_link_libraries(ouster_ros ${catkin_LIBRARIES})
