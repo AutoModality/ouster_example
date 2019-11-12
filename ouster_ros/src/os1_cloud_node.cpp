@@ -215,6 +215,7 @@ int main(int argc, char** argv) {
                                     // } else {
                                     //   thiscloud = &cloud;
                                     // }
+                                    tf2::Quaternion result;
                                     for ( uint32_t i = 0; i < (*thiscloud).size() ; i ++ ) {
                                           auto imu = average_imus( imu_entries[i],imu_entries[i+1] );
                                           geometry_msgs::Point outmsg;
@@ -224,7 +225,6 @@ int main(int argc, char** argv) {
                                           m.getRPY(roll,pitch,yaw);
                                           qimu.setRPY( roll,pitch,0 );
                                           geometry_msgs::TransformStamped tfimu{};
-					  // msg = ouster_ros::OS1::cloud_to_cloud_msg(cloud, std::chrono::nanoseconds{scan_ts}, lidar_frame);
                                           tfimu.transform.rotation.x = qimu.x();
                                           tfimu.transform.rotation.y = qimu.y();
                                           tfimu.transform.rotation.z = qimu.z();
@@ -241,22 +241,25 @@ int main(int argc, char** argv) {
 											   static_transform.transform.rotation.z,
 											   static_transform.transform.rotation.w,
 					      }*tf2::Quaternion{tfimu.transform.rotation.x,tfimu.transform.rotation.y,tfimu.transform.rotation.z,tfimu.transform.rotation.w};
-                                              tf2::Quaternion result = ntransform * \
-                                                                       tf2::Quaternion{(*thiscloud)[i].x,(*thiscloud)[i].y,(*thiscloud)[i].z} * 
-                                                                       tf2::Quaternion{-ntransform.x(),-ntransform.y(),-ntransform.z(),ntransform.w()};
+                                              result = ntransform * \
+                                                tf2::Quaternion{(*thiscloud)[i].x,(*thiscloud)[i].y,(*thiscloud)[i].z} * 
+                                                tf2::Quaternion{-ntransform.x(),-ntransform.y(),-ntransform.z(),ntransform.w()};
                                               (*thiscloud)[i].x = result.x();
                                               (*thiscloud)[i].y = result.y();
                                               (*thiscloud)[i].z = result.z();
 					    } else {
-					      outmsg.x = outmsg.y = outmsg.z = 0.0;
+					      // outmsg.x = outmsg.y = outmsg.z = 0.0;
+                                              result.setX(0);
+                                              result.setY(0);
+                                              result.setZ(0);
 					    }
 					  } else {
 					    outmsg = gmpt;
 					  }
-
                                         (*thiscloud)[i].x = static_cast<float>(outmsg.x);
                                         (*thiscloud)[i].y = static_cast<float>(outmsg.y);
                                         (*thiscloud)[i].z = static_cast<float>(outmsg.z);
+
                                       }
 
                                     msg = ouster_ros::OS1::cloud_to_cloud_msg(
