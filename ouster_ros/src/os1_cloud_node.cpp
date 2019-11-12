@@ -236,8 +236,19 @@ int main(int argc, char** argv) {
                                           ROS_DEBUG_STREAM_THROTTLE(1, ros::this_node::getName() << " applied IMU" );
 					  if ( !raw ) {
 					    if (std::sqrt(gmpt.x*gmpt.x + gmpt.y*gmpt.y + gmpt.z*gmpt.z) >= min_distance) {
-					      tf2::doTransform( gmpt,outmsg, static_transform );
-					      tf2::doTransform( outmsg,outmsg, tfimu );;
+					      tf2::Quaternion ntransform = tf2::Quaternion{static_transform.transform.rotation.x,
+											   static_transform.transform.rotation.y,
+											   static_transform.transform.rotation.z,
+											   static_transform.transform.rotation.w,
+					      }*tf2::Quaternion{tfimu.transform.rotation.x,tfimu.transform.rotation.y,tfimu.transform.rotation.z,tfimu.transform.rotation.w};
+					      geometry_msgs::TransformStamped gts;
+					      gts.transform.rotation.x = ntransform.x();
+					      gts.transform.rotation.y = ntransform.y();
+					      gts.transform.rotation.z = ntransform.z();
+					      gts.transform.rotation.w = ntransform.w();
+					      tf2::doTransform( gmpt,outmsg, gts );
+					      // tf2::doTransform( gmpt,outmsg, static_transform );
+					      // tf2::doTransform( outmsg,outmsg, tfimu );;
 					    } else {
 					      outmsg.x = outmsg.y = outmsg.z = 0.0;
 					    }
