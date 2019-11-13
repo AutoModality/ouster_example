@@ -57,6 +57,7 @@ int main(int argc, char** argv) {
     auto imu_timeout      = nh.param("imu_timeout", int{5});
     auto publish_raw_pc2  = nh.param("publish_raw_pointcloud", bool{false});
     auto organized        = nh.param("organized", bool{false});
+    ROS_ERROR_STREAM("ORganized is " << organized );
     auto raw              = nh.param("raw"      , bool{false} ); // Use the raw point cloud
     auto min_distance     = nh.param("min_distance", double{0.5} );
     
@@ -209,57 +210,53 @@ int main(int argc, char** argv) {
 								  &PointOS1::make,
         [&](uint64_t scan_ts) mutable {
                                     CloudOS1 *thiscloud;
-				    thiscloud = &cloud;
-                                    // if ( !organized ) {
-                                    //   thiscloud = &send_cloud;
-                                    // } else {
-                                    //   thiscloud = &cloud;
-                                    // }
+                                    if ( !organized ) {
+                                      thiscloud = &send_cloud;
+                                    } else {
+                                      thiscloud = &cloud;
+                                    }
                                     tf2::Quaternion result;
                                     for ( uint32_t i = 0; i < (*thiscloud).size() ; i ++ ) {
-                                          auto imu = average_imus( imu_entries[i],imu_entries[i+1] );
+					  // auto imu = average_imus( imu_entries[i],imu_entries[i+1] );
+					  auto imu = imu_entries[i];
                                           geometry_msgs::Point outmsg;
                                           tf2::Quaternion qimu(imu.orientation.x,imu.orientation.y,imu.orientation.z,imu.orientation.w);
                                           tf2::Matrix3x3 m(qimu);
                                           tf2Scalar roll, pitch, yaw;
                                           m.getRPY(roll,pitch,yaw);
                                           qimu.setRPY( roll,pitch,0 );
-                                          geometry_msgs::TransformStamped tfimu{};
-                                          tfimu.transform.rotation.x = qimu.x();
-                                          tfimu.transform.rotation.y = qimu.y();
-                                          tfimu.transform.rotation.z = qimu.z();
-                                          tfimu.transform.rotation.w = qimu.w();
-                                          geometry_msgs::Point gmpt;
-                                          gmpt.x = (*thiscloud)[i].x;
-                                          gmpt.y = (*thiscloud)[i].y;
-                                          gmpt.z = (*thiscloud)[i].z;
-                                          ROS_DEBUG_STREAM_THROTTLE(1, ros::this_node::getName() << " applied IMU" );
+								   
+                                          // ROS_DEBUG_STREAM_THROTTLE(1, ros::this_node::getName() << " applied IMU" );
 					  if ( !raw ) {
-					    if (std::sqrt(gmpt.x*gmpt.x + gmpt.y*gmpt.y + gmpt.z*gmpt.z) >= min_distance) {
-					      tf2::Quaternion ntransform = tf2::Quaternion{static_transform.transform.rotation.x,
+					    if (std::sqrt((*thiscloud)[i].x*(*thiscloud)[i].x + (*thiscloud)[i].y*(*thiscloud)[i].y + (*thiscloud)[i].z*(*thiscloud)[i].z) >= min_distance) {
+					      tf2::Quaternion ntransform = tf2::Quaternion{qimu.x(),qimu.y(),qimu.z(),qimu.w()}*
+					       				   tf2::Quaternion{static_transform.transform.rotation.x,
 											   static_transform.transform.rotation.y,
 											   static_transform.transform.rotation.z,
-											   static_transform.transform.rotation.w,
-					      }*tf2::Quaternion{tfimu.transform.rotation.x,tfimu.transform.rotation.y,tfimu.transform.rotation.z,tfimu.transform.rotation.w};
-                                              result = ntransform * \
-                                                tf2::Quaternion{(*thiscloud)[i].x,(*thiscloud)[i].y,(*thiscloud)[i].z} * 
-                                                tf2::Quaternion{-ntransform.x(),-ntransform.y(),-ntransform.z(),ntransform.w()};
-                                              (*thiscloud)[i].x = result.x();
-                                              (*thiscloud)[i].y = result.y();
-                                              (*thiscloud)[i].z = result.z();
+											   static_transform.transform.rotation.w};
+
+					      tf2::Quaternion ntprime = tf2::Quaternion{-static_transform.transform.rotation.x,
+					      						-static_transform.transform.rotation.y,
+					      						-static_transform.transform.rotation.z,
+					      						static_transform.transform.rotation.w} * 
+								        tf2::Quaternion{-qimu.x(),
+					      						-qimu.y(),
+					      						-qimu.z(),
+					      						qimu.w()};
+					      result = ntransform * tf2::Quaternion{(*thiscloud)[i].x,(*thiscloud)[i].y,(*thiscloud)[i].z,0}*ntprime;
 					    } else {
-					      // outmsg.x = outmsg.y = outmsg.z = 0.0;
                                               result.setX(0);
                                               result.setY(0);
                                               result.setZ(0);
 					    }
 					  } else {
-					    outmsg = gmpt;
+					    result.setX((*thiscloud)[i].x);
+					    result.setY((*thiscloud)[i].y);
+					    result.setZ((*thiscloud)[i].z);
 					  }
-                                        (*thiscloud)[i].x = static_cast<float>(outmsg.x);
-                                        (*thiscloud)[i].y = static_cast<float>(outmsg.y);
-                                        (*thiscloud)[i].z = static_cast<float>(outmsg.z);
-
+					  (*thiscloud)[i].x = result.x();
+					  (*thiscloud)[i].y = result.y();
+					  (*thiscloud)[i].z = result.z();			  
                                       }
 
                                     msg = ouster_ros::OS1::cloud_to_cloud_msg(
