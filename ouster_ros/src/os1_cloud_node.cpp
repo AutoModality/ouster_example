@@ -217,18 +217,16 @@ int main(int argc, char** argv) {
                                     }
                                     tf2::Quaternion result;
                                     for ( uint32_t i = 0; i < (*thiscloud).size() ; i ++ ) {
-					  // auto imu = average_imus( imu_entries[i],imu_entries[i+1] );
-					  auto imu = imu_entries[i];
-                                          geometry_msgs::Point outmsg;
-                                          tf2::Quaternion qimu(imu.orientation.x,imu.orientation.y,imu.orientation.z,imu.orientation.w);
-                                          tf2::Matrix3x3 m(qimu);
-                                          tf2Scalar roll, pitch, yaw;
-                                          m.getRPY(roll,pitch,yaw);
-                                          qimu.setRPY( roll,pitch,0 );
-								   
-                                          // ROS_DEBUG_STREAM_THROTTLE(1, ros::this_node::getName() << " applied IMU" );
 					  if ( !raw ) {
 					    if (std::sqrt((*thiscloud)[i].x*(*thiscloud)[i].x + (*thiscloud)[i].y*(*thiscloud)[i].y + (*thiscloud)[i].z*(*thiscloud)[i].z) >= min_distance) {
+					      auto imu = average_imus( imu_entries[i],imu_entries[i+1] );
+					      // auto imu = imu_entries[i];
+					      geometry_msgs::Point outmsg;
+					      tf2::Quaternion qimu(imu.orientation.x,imu.orientation.y,imu.orientation.z,imu.orientation.w);
+					      tf2::Matrix3x3 m(qimu);
+					      tf2Scalar roll, pitch, yaw;
+					      m.getRPY(roll,pitch,yaw);
+					      qimu.setRPY( roll,pitch,0 );
 					      tf2::Quaternion ntransform = tf2::Quaternion{qimu.x(),qimu.y(),qimu.z(),qimu.w()}*
 					       				   tf2::Quaternion{static_transform.transform.rotation.x,
 											   static_transform.transform.rotation.y,
@@ -286,26 +284,26 @@ int main(int argc, char** argv) {
         // Callback on Channel pt
         //
         [&](auto pt, int ichannel ) {
-          if ( std::sqrt(pt.x*pt.x + pt.y*pt.y + pt.z*pt.z) >= 0.5 ) {
+          if ( std::sqrt(pt.x*pt.x + pt.y*pt.y + pt.z*pt.z) >= min_distance ) {
             // ROS_ERROR_THROTTLE(1, "Called here !");
             if ( send_cloud.size() < W*H ) {
               send_cloud.push_back(pt);
               if ( send_cloud.size() > 1000 ) {
                 ROS_INFO_STREAM_THROTTLE(1, "cloud cap:" << send_cloud.points.capacity() << " size:" << send_cloud.size() );
               }
-              if ( imu_buf.empty() ) {
-                  sensor_msgs::Imu a;
-                  a.orientation.w = 1;
-                  imu_entries.push_back(a);
-              } else {
-                if ( !imu_buf.empty() ) 
-                  imu_entries.push_back(imu_buf.back());
-              }
-            } else {
-              ROS_ERROR_STREAM_THROTTLE(1, "Size of send_cloud:" << send_cloud.size() );
-            }
-          }
-        });
+	    } else {
+	      ROS_ERROR_STREAM_THROTTLE(1, "Size of send_cloud:" << send_cloud.size() );
+	    }
+	  }
+	  if ( imu_buf.empty() ) {
+	    sensor_msgs::Imu a;
+	    a.orientation.w = 1;
+	    imu_entries.push_back(a);
+	  } else {
+	    if ( !imu_buf.empty() ) 
+	      imu_entries.push_back(imu_buf.back());
+	  }
+	});
 
     
     auto lidar_handler = [&](const PacketMsg& pm) mutable {
