@@ -1,7 +1,9 @@
-<?xml version="1.0"?>
 <launch>
   <remap from="/os1_cloud_node/points" to="/sensor/lidar/pointcloud2"/>
-  <node pkg="tf2_ros" type="static_transform_publisher" name="ouster_tf" args="0 0 0.18 -0.230 0.669 0.669  0.230 base ouster" /> 
+  <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="ouster_tf" args="0.08 0 0.13 0 0 0 1 base ouster" /> -->
+  <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="ouster_tf" args="0.08 0 0.13 0.25881905 0.0 0.0 0.96592583 base ouster" /> -->
+  <node pkg="tf2_ros" type="static_transform_publisher" name="ouster_tf" args="0.08 0 0.13 0.183 -0.183 -0.683 0.683 base ouster" />
+  
   
   <arg name="os1_hostname" default="192.168.1.55" doc="hostname or IP in dotted decimal form of the sensor"/>
   <arg name="os1_udp_dest" default="192.168.1.1" doc="hostname or IP where the sensor will send data packets"/>
@@ -13,7 +15,7 @@
   <arg name="metadata" default="" doc="override default metadata file for replays"/>
   <arg name="viz" default="false" doc="whether to run a simple visualizer"/>
   <arg name="image" default="false" doc="publish range/intensity/noise image topic"/>
-  <arg name="organized" default="false" />
+  <arg name="organized" default="true" />
   
   <node pkg="ouster_ros" name="os1_node" type="os1_node" output="screen" required="true">
     <param name="~/lidar_mode" type="string" value="$(arg lidar_mode)"/>
@@ -34,9 +36,5 @@
     <remap from="~/pcl_channel" to="/os1_node/pcl_channel"/>
   </node>
 
-  <node pkg="latency_testing" type="latency_listener" name="latency_listener" output="screen" >
-    <rosparam param="read_topics">["/delays/os1_cloud_node/external_imu_cb"]</rosparam>
-    <rosparam command="load" file="$(find latency_testing)/launch/listener.yaml" />
-  </node> 
-  
+
 </launch>
