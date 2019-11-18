@@ -73,3 +73,18 @@ install(TARGETS os1_node
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 install(FILES os1.launch DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+
+
+#############
+## Testing ##
+#############
+if (CATKIN_ENABLE_TESTING )
+  # Simple unit tests with catkin_add_gtest
+  catkin_add_gtest(testpcl ./test/test_convert.cpp WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test )
+  # target_compile_definitions(testpcl PUBLIC TEST)
+  target_link_libraries(testpcl ouster_ros )
+  install(DIRECTORY test DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+  # add_rostest_gtest(testdelaystats launch/testdelaystats.launch test/test_delaystats.cpp)
+  # target_link_libraries(testdelaystats ${catkin_LIBRARIES} amdelaystatistics )
+
+endif(CATKIN_ENABLE_TESTING)

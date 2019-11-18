@@ -40,6 +40,33 @@ void setXYZW(tf2::Quaternion &elem, float x, float y, float z , float w ) {
   elem = tf2::Quaternion{x,y,z,w};
 }
 
+void filter_pointcloud(CloudOS1 &incloud, CloudOS1 &out_pc)
+{
+    assert(out_pc.height == 16 );
+    int count = 0;
+    for(size_t w = 0 ; w < incloud.width; w ++)
+    {
+      // for(size_t height = 2; height < 64; height+=4)
+      for ( size_t h = 2 ; h < incloud.height; h +=4 ) 
+      {
+          int from_index = w * 64 + h;
+          int to_index   = w * 16 + h / 4;
+          if(incloud.points[from_index].x == 0 && incloud.points[from_index].y == 0 &&
+             incloud.points[from_index].z == 0)
+          {
+                out_pc.points[to_index].x = std::numeric_limits<double>::quiet_NaN();
+                out_pc.points[to_index].y = std::numeric_limits<double>::quiet_NaN();
+                out_pc.points[to_index].z = std::numeric_limits<double>::quiet_NaN();
+          }
+          else
+          {
+              out_pc.points[to_index] = incloud.points[from_index];
+          }
+          count++;
+        }
+    }
+    // return out_pc;
+}
 
 int main(int argc, char** argv) {
     ros::init(argc, argv, "os1_cloud_node");
@@ -132,6 +159,7 @@ int main(int argc, char** argv) {
                                      cfg.response.beam_altitude_angles);
 
     CloudOS1 cloud{W, H};
+    CloudOS1 scaled_cloud{W,H/4};
     CloudOS1 send_cloud{W*H, 1};
     CloudOS1 raw_cloud{W*H,1};
 
@@ -210,10 +238,11 @@ int main(int argc, char** argv) {
 								  &PointOS1::make,
         [&](uint64_t scan_ts) mutable {
                                     CloudOS1 *thiscloud;
-                                    if ( !organized ) {
-                                      thiscloud = &send_cloud;
+                                    if ( organized ) {
+                                        filter_pointcloud( cloud, scaled_cloud );
+                                        thiscloud = &send_cloud;
                                     } else {
-                                      thiscloud = &cloud;
+                                        thiscloud = &send_cloud;
                                     }
                                     tf2::Quaternion result;
                                     for ( uint32_t i = 0; i < (*thiscloud).size() ; i ++ ) {
@@ -362,3 +391,4 @@ int main(int argc, char** argv) {
 
     return EXIT_SUCCESS;
 }
+
