@@ -240,7 +240,7 @@ int main(int argc, char** argv) {
                                     CloudOS1 *thiscloud;
                                     if ( organized ) {
                                         filter_pointcloud( cloud, scaled_cloud );
-                                        thiscloud = &send_cloud;
+                                        thiscloud = &scaled_cloud;
                                     } else {
                                         thiscloud = &send_cloud;
                                     }
