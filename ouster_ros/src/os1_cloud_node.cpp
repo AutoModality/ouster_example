@@ -29,6 +29,7 @@
 #include <tf2/convert.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <latency_testing/DelayStatistics.h>
+#include <vb_util_lib/topics.h>
 
 using PacketMsg = ouster_ros::PacketMsg;
 using CloudOS1 = ouster_ros::OS1::CloudOS1;
@@ -75,7 +76,7 @@ int main(int argc, char** argv) {
     
     // ros::Publisher
     
-    auto imu_topic        = nh.param("imu_topic", std::string{"/dji_sdk/imu"});
+    auto imu_topic        = nh.param("imu_topic", std::string{am::am_topics::DJI_SDK_IMU});
     auto pcl_channel      = nh.param("pcl_channel", std::string{"/sensor/lidar"});
     auto tf_prefix        = nh.param("tf_prefix", std::string{});
 
