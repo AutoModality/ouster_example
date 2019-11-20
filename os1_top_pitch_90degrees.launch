@@ -1,0 +1,83 @@
+<?xml version="1.0"?>
+<launch>
+  <remap from="/os1_cloud_node/points" to="/sensor/lidar/pointcloud2"/>
+  <!-- Original iteration -->
+  <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="ouster_tf" args="0 0 -0.1 -0.707 0 -0.707 0 base ouster" /> -->
+  <!-- Iteration 2 -->
+  <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="ouster_tf" args="0 0 -0.1   -0.70645493 -0.02775669 -0.70645493  0.02775669 base ouster" /> -->
+  <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="ouster_tf" args="0 0 -0.1   -0.70645493 -0.02775669 -0.70645493  0.02775669 base ouster" /> -->
+  <!-- Iteration 3 -->
+   <node pkg="tf2_ros" type="static_transform_publisher" name="ouster_tf" args="0.08 0 0.13 -0.230 0.669 0.669  0.230 base ouster" /> 
+
+  <!-- Iteration 4 -->
+  <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="ouster_tf" args="0 0 -0.1   0.0 0.0 0.38268343 0.9238795 base ouster" /> -->
+
+  <!-- Iteration 5 -->
+  <!-- need to rotate y 90 degrees -->
+  <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="ouster_tf" args="0 0 -0.1 -0.38  0.923 0 0 base ouster" /> -->
+
+  <!-- Iteration 6 -->
+  <!-- needs a -90 degree turn in X axis -->
+  <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="ouster_tf" args="0 0 -0.1  0 0 0.923 0.380  base ouster" /> -->
+
+  <!-- Iteration 7 -->
+  <!-- Trying 180 rotation of the original data -->
+  <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="ouster_tf" args="0 0 -0.1 -0.380000000 -0.92  0 0  base ouster" /> -->
+
+  <!-- Iteration 7 -->
+  <!-- Rotate 90  y axis -->
+  <!-- Start with  -->
+  <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="ouster_tf" args="0 0 -0.1 0 0 0.38 0.92 base ouster" /> -->
+  <!-- and we should see the wall shift up on the z axies -->
+    <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="ouster_tf" args="0 0 -0.1 0.38 0.92 0 0 base ouster" /> -->
+  <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="ouster_tf" args="0 0 -0.1 0.26870058 0.65053824 0.26870058 0.65053824 base ouster" /> -->
+
+  <!-- Experiment worked -->
+  <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="ouster_tf" args="0 0 -0.1 0 0 0.38 0.92 base ouster" /> -->
+  <!-- Negative direction -->
+  <!-- -0.26870058 -0.65053824  0.26870058  0.65053824 -->
+  <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="ouster_tf" args="0 0 -0.1 -0.26870058 -0.65053824  0.26870058  0.65053824 base ouster" /> -->
+  <!-- Y axis 180 degrees -->
+  <!--<node pkg="tf2_ros" type="static_transform_publisher" name="ouster_tf" args="0 0 -0.1   -0.26870058  0.65053824 -0.26870058  0.65053824 base ouster" />-->
+
+
+
+  <!-- Rotate this fucking thing 180 -->
+  <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="ouster_tf" args="0 0 -0.1   0.26870058  0.65053824 -0.26870058 -0.65053824 base ouster" /> -->
+  
+
+  
+  <arg name="os1_hostname" default="192.168.1.55" doc="hostname or IP in dotted decimal form of the sensor"/>
+  <arg name="os1_udp_dest" default="192.168.1.1" doc="hostname or IP where the sensor will send data packets"/>
+  <arg name="os1_lidar_port" default="7502" doc="port to which the sensor should send lidar data"/>
+  <arg name="os1_imu_port" default="7503" doc="port to which the sensor should send imu data"/>
+  <arg name="replay" default="false" doc="do not connect to a sensor; expect /os1_node/{lidar,imu}_packets from replay"/>
+  <arg name="lidar_mode" default="512x20" doc="resolution and rate: either 512x10, 512x20, 1024x10, 1024x20, or 2048x10"/>
+  <arg name="timestamp_mode" default="TIME_FROM_PTP_1588" doc="Timestamp mode"/>
+  <arg name="metadata" default="" doc="override default metadata file for replays"/>
+  <arg name="viz" default="false" doc="whether to run a simple visualizer"/>
+  <arg name="image" default="false" doc="publish range/intensity/noise image topic"/>
+
+  <node pkg="ouster_ros" name="os1_node" type="os1_node" output="screen" required="true">
+    <param name="~/lidar_mode" type="string" value="$(arg lidar_mode)"/>
+    <param name="~/replay" value="$(arg replay)"/>
+    <param name="~/os1_hostname" value="$(arg os1_hostname)"/>
+    <param name="~/os1_udp_dest" value="$(arg os1_udp_dest)"/>
+    <param name="~/os1_lidar_port" value="$(arg os1_lidar_port)"/>
+    <param name="~/os1_imu_port" value="$(arg os1_imu_port)"/>
+    <param name="~/metadata" value="$(arg metadata)"/>
+  </node>
+
+  <node pkg="ouster_ros" type="os1_cloud_node" name="os1_cloud_node" output="screen" respawn="true">
+    <remap from="~/os1_config" to="/os1_node/os1_config"/>
+    <remap from="~/lidar_packets" to="/os1_node/lidar_packets"/>
+    <remap from="~/imu_packets" to="/os1_node/imu_packets"/>
+    <remap from="~/pcl_channel" to="/os1_node/pcl_channel"/>
+  </node>
+
+  <node pkg="latency_testing" type="latency_listener" name="latency_listener" output="screen" >
+    <rosparam param="read_topics">["/delays/os1_cloud_node/external_imu_cb"]</rosparam>
+    <rosparam command="load" file="$(find latency_testing)/launch/listener.yaml" />
+  </node> 
+  
+</launch>

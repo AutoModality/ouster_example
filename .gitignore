@@ -4,7 +4,4 @@ build/
 devel/
 logs/
 install/
-debian/
-*/debian/
-*/obj-*-linux-gnu/
-*.deb
+doc/
