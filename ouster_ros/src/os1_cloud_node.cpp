@@ -78,7 +78,10 @@ int main(int argc, char** argv) {
     auto imu_topic        = nh.param("imu_topic", std::string{"/dji_sdk/imu"});
     auto pcl_channel      = nh.param("pcl_channel", std::string{"/sensor/lidar"});
     auto tf_prefix        = nh.param("tf_prefix", std::string{});
-
+    auto num_channels     = nh.param("channels", int{16} );
+    if ( num_channels != 16 ) {
+      num_channels = 64;
+    }
     auto base_tf          = nh.param("base_tf", std::string{"base"});
     auto to_tf            = nh.param("to_tf", std::string{"ouster"});
     auto imu_timeout      = nh.param("imu_timeout", int{5});
@@ -159,7 +162,7 @@ int main(int argc, char** argv) {
                                      cfg.response.beam_altitude_angles);
 
     CloudOS1 cloud{W, H};
-    CloudOS1 scaled_cloud{W,H/4};
+    CloudOS1 scaled_cloud{W,((H * num_channels)/64)};
     CloudOS1 send_cloud{W*H, 1};
     CloudOS1 raw_cloud{W*H,1};
 
@@ -239,8 +242,12 @@ int main(int argc, char** argv) {
         [&](uint64_t scan_ts) mutable {
                                     CloudOS1 *thiscloud;
                                     if ( organized ) {
+                                      if ( num_channels == 16  ) {
                                         filter_pointcloud( cloud, scaled_cloud );
                                         thiscloud = &scaled_cloud;
+                                      } else {
+                                        thiscloud = &cloud;
+                                      }
                                     } else {
                                         thiscloud = &send_cloud;
                                     }
