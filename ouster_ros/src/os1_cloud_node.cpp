@@ -320,6 +320,8 @@ int main(int argc, char** argv) {
         // Callback on Channel pt
         //
         [&](auto pt, int ichannel ) {
+          if ( num_channels == 16 && ((ichannel + 2 ) % 4) != 0 )
+	    return;
           if ( std::sqrt(pt.x*pt.x + pt.y*pt.y + pt.z*pt.z) >= min_distance ) {
             // ROS_ERROR_THROTTLE(1, "Called here !");
             if ( send_cloud.size() < W*H ) {
