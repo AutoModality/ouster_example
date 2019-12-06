@@ -137,7 +137,7 @@ std::function<void(const uint8_t*, iterator_type it)> batch_to_iter(
                                   OS1::px_reflectivity(px_buf), ipx,
                                   OS1::px_noise_photons(px_buf), r);
                 it[idx + ipx] = tmp;
-                g(tmp, idx + ipx );
+                g(tmp, ipx );
                 // g(tmp, (ipx + 2)/4  ); // @TODO Hackish but Ouster didn't write the driver to
                 //                        // accomodate their 16 channel LIDAR
             }

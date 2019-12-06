@@ -327,7 +327,7 @@ int main(int argc, char** argv) {
             if ( send_cloud.size() < W*H ) {
               send_cloud.push_back(pt);
               if ( send_cloud.size() > 1000 ) {
-                ROS_INFO_STREAM_THROTTLE(1, "cloud cap:" << send_cloud.points.capacity() << " size:" << send_cloud.size() );
+                ROS_DEBUG_STREAM_THROTTLE(1, "cloud cap:" << send_cloud.points.capacity() << " size:" << send_cloud.size() );
               }
 	    } else {
 	      ROS_ERROR_STREAM_THROTTLE(1, "Size of send_cloud:" << send_cloud.size() );
