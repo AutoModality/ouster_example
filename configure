@@ -1,0 +1,13 @@
+#!/bin/bash
+PACKAGE=am-ouster
+source /opt/ros/kinetic/setup.bash
+echo "We are $(pwd)"
+CURDIR=$(readlink -f $(pwd))
+mkdir -p catkin_ws/src/${PACKAGE}
+WORKSPACE=$(readlink -f ./catkin_ws)
+cp -r {ouster_client,ouster_ros} catkin_ws/src/${PACKAGE}
+cd catkin_ws
+catkin init --workspace .
+echo "PWD: $(pwd)"
+catkin config --install
+
