@@ -5,3 +5,6 @@ devel/
 logs/
 install/
 doc/
+debian/ros-kinetic-am-ouster*
+debian/source
+catkin_ws
