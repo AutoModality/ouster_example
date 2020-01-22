@@ -1,0 +1,6 @@
+<launch>
+  <arg name="PARAM_FILE" default="$(optenv PARAM_FILE)"  />
+  <node name="talker" pkg="rospy_tutorials" type="talker.py" />
+  <rosparam command="load" file="$(arg PARAM_FILE)" />
+  <test test-name="test_run" pkg="rostest" type="hztest" name="hztest1" />
+</launch>
