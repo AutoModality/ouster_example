@@ -74,6 +74,10 @@ install(TARGETS os1_node
 )
 install(FILES os1.launch os1_bottom.launch  os1_bottom_pitch_-90degrees.launch os1_tmux.launch  os1_top_pitch30degress_rotate90.launch  os1_top_pitch_90degrees.launch DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 
+install(FILES test/talker.py 
+  PERMISSIONS   OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE 
+  DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}/${PROJECT_NAME} )
+install(DIRECTORY scripts DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 
 #############
 ## Testing ##
