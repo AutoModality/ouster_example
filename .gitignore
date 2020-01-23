@@ -10,3 +10,4 @@ debian/source
 debian/*-stamp
 debian/files
 catkin_ws
+*~
