@@ -9,5 +9,5 @@ cp -r {ouster_client,ouster_ros} catkin_ws/src/${PACKAGE}
 cd catkin_ws
 catkin init --workspace .
 echo "PWD: $(pwd)"
-catkin config --install
+catkin config --install --cmake-args -DCATKIN_ENABLE_TESTING=True
 

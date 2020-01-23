@@ -5,7 +5,7 @@
   <arg name="resolution" />
   <arg name="hz" />
   <arg name="organized" />
-  <arg name="self_test" value="true"/>
+  <arg name="self_test" default="true"/>
   <arg name="replay" value="true"/>
   <arg name="replaydelay" default="5" />
   
@@ -41,7 +41,7 @@
     <remap from="~/pcl_channel" to="/os1_node/pcl_channel"/>
   </node>
 
-  <node pkg="ouster_ros" name="ROSBAG" type="rosbag.sh" args="$(arg replaydelay) $(find ouster_ros)/data/$(arg organized)_$(arg resolution)x$(arg hz).bag" />
+  <node if="$(arg self_test)" pkg="ouster_ros" name="ROSBAG" type="rosbag.sh" args="$(arg replaydelay) $(find ouster_ros)/data/$(arg organized)_$(arg resolution)x$(arg hz).bag" />
 
 
 </launch>

@@ -76,13 +76,8 @@ install(TARGETS os1_node
 install(FILES os1.launch os1_bottom.launch  os1_bottom_pitch_-90degrees.launch os1_tmux.launch  os1_top_pitch30degress_rotate90.launch  os1_top_pitch_90degrees.launch DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 
 install(DIRECTORY launch DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
-
-# install(FILES test/talker.py 
-#   PERMISSIONS   OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE 
-#   DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}/${PROJECT_NAME} )
-
 install(DIRECTORY scripts DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION} USE_SOURCE_PERMISSIONS FILES_MATCHING PATTERN "*.py" PATTERN "*.sh" )
-install(DIRECTORY data    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION} )
+
 
 #############
 ## Testing ##
@@ -93,16 +88,24 @@ if (CATKIN_ENABLE_TESTING )
   # target_compile_definitions(testpcl PUBLIC TEST)
   target_link_libraries(testpcl ouster_ros )
   install(DIRECTORY test DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
-  # add_rostest_gtest(testdelaystats launch/testdelaystats.launch test/test_delaystats.cpp)
-  # target_link_libraries(testdelaystats ${catkin_LIBRARIES} amdelaystatistics )
 
   add_rostest(launch/hztest.launch  ARGS hz:=20 resolution:=512 organized:=organized test_duration:=20 replaydelay:=10 )
   add_rostest(launch/hztest.launch  ARGS hz:=10 resolution:=512 organized:=organized test_duration:=20 replaydelay:=10 )
   add_rostest(launch/hztest.launch  ARGS hz:=10 resolution:=1024 organized:=organized test_duration:=30 replaydelay:=10 )
   add_rostest(launch/hztest.launch  ARGS hz:=20 resolution:=1024 organized:=organized test_duration:=60 replaydelay:=10 )
+  add_rostest(launch/hztest.launch  ARGS hz:=10 resolution:=2048 organized:=organized test_duration:=30 replaydelay:=10 )
+
+  add_rostest(launch/hztest.launch  ARGS hz:=20 resolution:=512 organized:=unorganized test_duration:=20 replaydelay:=10 )
+  add_rostest(launch/hztest.launch  ARGS hz:=10 resolution:=512 organized:=unorganized test_duration:=20 replaydelay:=10 )
+  add_rostest(launch/hztest.launch  ARGS hz:=10 resolution:=1024 organized:=unorganized test_duration:=30 replaydelay:=10 )
+  add_rostest(launch/hztest.launch  ARGS hz:=20 resolution:=1024 organized:=unorganized test_duration:=60 replaydelay:=10 )
+  add_rostest(launch/hztest.launch  ARGS hz:=10 resolution:=2048 organized:=unorganized test_duration:=30 replaydelay:=10 )
 
   if ( CATKIN_ENABLE_TESTBENCH_TESTING )
     
   endif( CATKIN_ENABLE_TESTBENCH_TESTING ) 
 
 endif(CATKIN_ENABLE_TESTING)
+
+
+install(DIRECTORY data    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION} )

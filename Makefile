@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 
 default:
-	source /opt/ros/kinetic/setup.bash && cd catkin_ws && catkin clean -f -i -y && catkin build -j3
+	source /opt/ros/kinetic/setup.bash && cd catkin_ws && catkin clean -f -i -y && catkin build -j3 && catkin run_tests
 	rm -f catkin_ws/install/lib/pkgconfig/catkin_tools_prebuild.pc
 	@echo "Built!!!!"
 
