@@ -23,6 +23,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_ros
   tf2_geometry_msgs
   latency_testing
+  rostest
 )
 
 add_message_files(FILES PacketMsg.msg)
@@ -94,5 +95,14 @@ if (CATKIN_ENABLE_TESTING )
   install(DIRECTORY test DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
   # add_rostest_gtest(testdelaystats launch/testdelaystats.launch test/test_delaystats.cpp)
   # target_link_libraries(testdelaystats ${catkin_LIBRARIES} amdelaystatistics )
+
+  add_rostest(launch/hztest.launch  ARGS hz:=20 resolution:=512 organized:=organized test_duration:=20 replaydelay:=10 )
+  add_rostest(launch/hztest.launch  ARGS hz:=10 resolution:=512 organized:=organized test_duration:=20 replaydelay:=10 )
+  add_rostest(launch/hztest.launch  ARGS hz:=10 resolution:=1024 organized:=organized test_duration:=30 replaydelay:=10 )
+  add_rostest(launch/hztest.launch  ARGS hz:=20 resolution:=1024 organized:=organized test_duration:=60 replaydelay:=10 )
+
+  if ( CATKIN_ENABLE_TESTBENCH_TESTING )
+    
+  endif( CATKIN_ENABLE_TESTBENCH_TESTING ) 
 
 endif(CATKIN_ENABLE_TESTING)

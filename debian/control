@@ -2,11 +2,11 @@ Source: ros-kinetic-am-ouster
 Section: misc
 Priority: extra
 Maintainer: info <info@automodality.com>
-Build-Depends: debhelper (>= 9.0.0), ros-kinetic-catkin, ros-kinetic-geometry-msgs, ros-kinetic-message-generation, ros-kinetic-nav-msgs, ros-kinetic-rosconsole, ros-kinetic-roscpp, ros-kinetic-rostime, ros-kinetic-sensor-msgs, ros-kinetic-std-msgs, ros-kinetic-latency-testing (>= 2.feature-BB-773.15), ros-kinetic-rospy
+Build-Depends: debhelper (>= 9.0.0), ros-kinetic-catkin, ros-kinetic-geometry-msgs, ros-kinetic-message-generation, ros-kinetic-nav-msgs, ros-kinetic-rosconsole, ros-kinetic-roscpp, ros-kinetic-rostime, ros-kinetic-sensor-msgs, ros-kinetic-std-msgs, ros-kinetic-latency-testing (>= 2.feature-BB-773.15), ros-kinetic-rospy, ros-kinetic-rostest
 Homepage: https://github.com/AutoModality/am-utils
 Standards-Version: 3.9.2
 
 Package: ros-kinetic-am-ouster
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, ros-kinetic-geometry-msgs, ros-kinetic-message-runtime, ros-kinetic-nav-msgs, ros-kinetic-rosconsole, ros-kinetic-roscpp, ros-kinetic-rostime, ros-kinetic-sensor-msgs, ros-kinetic-std-msgs, ros-kinetic-latency-testing (>= 2.feature-BB-773.15), ros-kinetic-rospy
+Depends: ${shlibs:Depends}, ${misc:Depends}, ros-kinetic-geometry-msgs, ros-kinetic-message-runtime, ros-kinetic-nav-msgs, ros-kinetic-rosconsole, ros-kinetic-roscpp, ros-kinetic-rostime, ros-kinetic-sensor-msgs, ros-kinetic-std-msgs, ros-kinetic-latency-testing (>= 2.feature-BB-773.15), ros-kinetic-rospy, ros-kinetic-rostest
 Description: The am ouster package
