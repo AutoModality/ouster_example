@@ -1,0 +1,29 @@
+<launch>
+  <arg name="resolution" />
+  <arg name="hz" />
+  <arg name="organized" />
+  <arg name="self_test" value="true"/>
+  <arg name="replay" value="true"/>
+  <arg name="replaydelay" default="5.0"/>
+  <arg name="test_duration" default="5.0"/>
+  <arg name="hzerror" default="0.5"/>
+  <arg name="wait_time" default="8" />
+  <arg name="test_name" />
+  <arg name="time_limit" default="60" />
+
+  <param name="hztest1/topic" value="/sensor/lidar/pointcloud2" />
+  <param name="hztest1/hz" value="$(arg hz)" />
+  <param name="hztest1/hzerror" value="$(arg hzerror)" />
+  <param name="hztest1/test_duration" value="$(arg test_duration)" />
+  <test test-name="hztest1" pkg="rostest" type="hztest" name="hztest1" time-limit="$(arg time_limit)"/>
+
+
+  <include file="$(find ouster_ros)/launch/os1_test_template.launch">
+    <arg name="resolution" value="$(arg resolution)" />
+    <arg name="hz" value="$(arg hz)" />
+    <arg name="organized" value="$(arg organized)" />
+    <arg name="replaydelay" value="$(arg replaydelay)" />
+  </include>
+
+
+</launch>
