@@ -17,20 +17,22 @@ from os.path import basename
 import tempfile
 import glob
 import os
+import datetime
 
 def parse_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-O', '--output_name',default="",
+    parser.add_argument('-O', '--output_file',default="ouster_test" + datetime.datetime.now().strftime("_%Y%m%d-%H%M%S") + ".bag",
                         help='Output Bagfile name')
     parser.add_argument('-D', '--output_directory',default="/home/nvidia",
                         help='Output bag file directory')
-    parser.add_argument('-d', '--duration',
-                        help='Duration for the test')
+    parser.add_argument('-d', '--duration',type=int,
+                        help='Duration for the test [Default=60 seconds]',default=60 )
     parser.add_argument('-o', '--organized', action="store_true",default=False,
                         help='Organized or Unorganized pointcloud')
 
     parser.add_argument('-H', '--hz' , type=int, help="frequency to run ouster at")
+    parser.add_argument('-E', '--hzerror' , type=float, default=0.5, help="Hertz error")
     parser.add_argument('-r', '--resolution', type=int, help="Resolution to run scan (512,1024,2048)")
     
     if len(sys.argv) == 1:
@@ -48,17 +50,12 @@ def parse_args():
     if args.organized:
         args.organized = "organized"
     else:
-        args.organized = "unoranized"
+        args.organized = "unorganized"
     return args
 
 if __name__ == "__main__":
     args = parse_args()
-    os.system('rostest ouster_ros hztest.launch  hz:=%d resolution:=%d organized:=%s test_duration:=%d out_file:=%s output_directory:=%s' % (
-        args.hz,
-        args.resolution,
-        args.organized,
-        args.duration,
-        args.out_file,
-        args.output_directory
-    ))
+    cmd = 'rostest ouster_ros hztest_fixture.launch  hz:=%d hzerror:=%f resolution:=%d organized:=%s test_duration:=%d out_file:=%s output_directory:=%s' % ( args.hz,args.hzerror,args.resolution, args.organized,args.duration,args.output_file, args.output_directory )
+    print("Running '%s'" % (cmd)) 
+    os.system(cmd)
     
