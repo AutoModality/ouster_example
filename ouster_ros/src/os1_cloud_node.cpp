@@ -210,8 +210,8 @@ int main(int argc, char** argv) {
 
     auto external_imu_cb = [&]( const sensor_msgs::Imu::ConstPtr &imu_msg) {
                              num_imus ++;
-                             am::MeasureDelayStop(ros::this_node::getName() + "/external_imu_cb" );
-                             am::MeasureDelayStart(ros::this_node::getName() + "/external_imu_cb" );
+                             // am::MeasureDelayStop(ros::this_node::getName() + "/external_imu_cb" );
+                             //am::MeasureDelayStart(ros::this_node::getName() + "/external_imu_cb" );
                              auto tmp = std::sqrt( imu_msg->orientation.x*imu_msg->orientation.x +
                                                    imu_msg->orientation.y*imu_msg->orientation.y +
                                                    imu_msg->orientation.z*imu_msg->orientation.z +
@@ -308,8 +308,8 @@ int main(int argc, char** argv) {
                                     }
 
           msg.header.frame_id = "body_Level_FLU";
-          am::MeasureDelayStop (ros::this_node::getName() + "/ouster_pcl_delay" );
-          am::MeasureDelayStart(ros::this_node::getName() + "/ouster_pcl_delay" );
+				    //am::MeasureDelayStop (ros::this_node::getName() + "/ouster_pcl_delay" );
+				    //am::MeasureDelayStart(ros::this_node::getName() + "/ouster_pcl_delay" );
           lidar_pub.publish(msg);
           send_cloud.clear();
           imu_entries.clear();
@@ -366,9 +366,9 @@ int main(int argc, char** argv) {
                                                                       (void)ev;
                                                                       auto val = num_imus.load();
                                                                       if ( val == 0 ) {
-                                                                          am::MeasureDelayStart(ros::this_node::getName() + "/external_imu_cb" );
+									//am::MeasureDelayStart(ros::this_node::getName() + "/external_imu_cb" );
                                                                           ros::Duration(imu_timeout).sleep();
-                                                                          am::MeasureDelayStop(ros::this_node::getName() + "/external_imu_cb" );
+                                                                          //am::MeasureDelayStop(ros::this_node::getName() + "/external_imu_cb" );
                                                                           ROS_ERROR_STREAM("IMU has taken longer than " << imu_timeout << " seconds"  );
                                                                           sensor_msgs::Imu tmsg;
                                                                           tmsg.orientation.x = tmsg.orientation.y = tmsg.orientation.z = 0;
