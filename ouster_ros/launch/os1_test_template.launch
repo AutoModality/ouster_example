@@ -1,5 +1,6 @@
 <launch>
-  <remap from="/os1_cloud_node/points" to="/sensor/lidar/pointcloud2"/>
+  <arg name="pcl_topic" default="/sensor/lidar/pointcloud2" />
+  <remap from="/os1_cloud_node/points" to="$(arg pcl_topic)"/>
   <node pkg="tf2_ros" type="static_transform_publisher" name="ouster_tf" args="0 0 0 0 0 0 1 base ouster" />  
 
   <arg name="resolution" />
