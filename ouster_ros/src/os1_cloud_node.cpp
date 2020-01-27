@@ -84,6 +84,7 @@ int main(int argc, char** argv) {
     auto imu_timeout      = nh.param("imu_timeout", int{5});
     auto publish_raw_pc2  = nh.param("publish_raw_pointcloud", bool{false});
     auto organized        = nh.param("organized", bool{false});
+    auto self_test        = nh.param("self_test", bool{false});
     ROS_ERROR_STREAM("ORganized is " << organized );
     auto raw              = nh.param("raw"      , bool{false} ); // Use the raw point cloud
     auto min_distance     = nh.param("min_distance", double{0.5} );
@@ -112,29 +113,34 @@ int main(int argc, char** argv) {
 
     tf2_ros::Buffer tfBuffer;
     tf2_ros::TransformListener tfListener(tfBuffer);
-    geometry_msgs::TransformStamped static_transform;
+    geometry_msgs::TransformStamped static_transform; // TODO 
     int count = 0;
     ros::Rate rate(10.0);
     bool found_xform = false;
-    while (nh.ok() && count < 100){
+    if ( self_test ) {
+      static_transform.transform.rotation.x = static_transform.transform.rotation.y = static_transform.transform.rotation.z = 0.0;
+      static_transform.transform.rotation.w = 1.0;
+    } else {
+      while (nh.ok() && count < 100){
         try{
-            static_transform = tfBuffer.lookupTransform(base_tf, to_tf,ros::Time(1));
-            count = 100;
-            found_xform = true;
-            ROS_DEBUG_STREAM("Got " << static_transform );
+          static_transform = tfBuffer.lookupTransform(base_tf, to_tf,ros::Time(1));
+          count = 100;
+          found_xform = true;
+          ROS_DEBUG_STREAM("Got " << static_transform );
 
         }
         catch (tf2::TransformException &ex) {
-            ROS_WARN("%s",ex.what());
-            ros::Duration(0.1).sleep();
-            count ++;
-            continue;
+          ROS_WARN("%s",ex.what());
+          ros::Duration(0.1).sleep();
+          count ++;
+          continue;
         }
         rate.sleep();
-    }
-    if ( !found_xform ) {
+      }
+      if ( !found_xform ) {
         ROS_ERROR_STREAM("Could not get static_transform from base to tf" );
         return EXIT_FAILURE;
+      }
     }
 
     tf2::Quaternion static_rotate(static_transform.transform.rotation.x,
@@ -204,8 +210,8 @@ int main(int argc, char** argv) {
 
     auto external_imu_cb = [&]( const sensor_msgs::Imu::ConstPtr &imu_msg) {
                              num_imus ++;
-                             am::MeasureDelayStop(ros::this_node::getName() + "/external_imu_cb" );
-                             am::MeasureDelayStart(ros::this_node::getName() + "/external_imu_cb" );
+                             // am::MeasureDelayStop(ros::this_node::getName() + "/external_imu_cb" );
+                             //am::MeasureDelayStart(ros::this_node::getName() + "/external_imu_cb" );
                              auto tmp = std::sqrt( imu_msg->orientation.x*imu_msg->orientation.x +
                                                    imu_msg->orientation.y*imu_msg->orientation.y +
                                                    imu_msg->orientation.z*imu_msg->orientation.z +
@@ -302,8 +308,8 @@ int main(int argc, char** argv) {
                                     }
 
           msg.header.frame_id = "body_Level_FLU";
-          am::MeasureDelayStop (ros::this_node::getName() + "/ouster_pcl_delay" );
-          am::MeasureDelayStart(ros::this_node::getName() + "/ouster_pcl_delay" );
+				    //am::MeasureDelayStop (ros::this_node::getName() + "/ouster_pcl_delay" );
+				    //am::MeasureDelayStart(ros::this_node::getName() + "/ouster_pcl_delay" );
           lidar_pub.publish(msg);
           send_cloud.clear();
           imu_entries.clear();
@@ -360,9 +366,9 @@ int main(int argc, char** argv) {
                                                                       (void)ev;
                                                                       auto val = num_imus.load();
                                                                       if ( val == 0 ) {
-                                                                          am::MeasureDelayStart(ros::this_node::getName() + "/external_imu_cb" );
+									//am::MeasureDelayStart(ros::this_node::getName() + "/external_imu_cb" );
                                                                           ros::Duration(imu_timeout).sleep();
-                                                                          am::MeasureDelayStop(ros::this_node::getName() + "/external_imu_cb" );
+                                                                          //am::MeasureDelayStop(ros::this_node::getName() + "/external_imu_cb" );
                                                                           ROS_ERROR_STREAM("IMU has taken longer than " << imu_timeout << " seconds"  );
                                                                           sensor_msgs::Imu tmsg;
                                                                           tmsg.orientation.x = tmsg.orientation.y = tmsg.orientation.z = 0;
