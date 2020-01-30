@@ -15,12 +15,11 @@ jobs:
           token: ${{secrets.github_token}}
       - name: Package
         id: package
-        uses: AutoModality/action-package-debian-ros@v1.2.0
+        uses: AutoModality/action-package-debian-ros@v1.2.1
         with:
           branch: ${{ github.event.pull_request.head.ref }}
           pull-request-number: ${{ github.event.number }}
           build-number: ${{ steps.buildnumber.outputs.build_number }}
-          dev-repo-entitlement: ${{ secrets.CLOUDSMITH_READ_DEV_ENTITLEMENT }}
           release-repo-entitlement: ${{ secrets.CLOUDSMITH_READ_RELEASE_ENTITLEMENT }}
       - name: The generated package
         run: echo "The artifact is ${{ steps.package.outputs.artifact-path }}"
