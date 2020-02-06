@@ -1,0 +1,47 @@
+<launch>
+  <arg name="resolution" />
+  <arg name="hz" />
+  <arg name="organized" />
+  <arg name="self_test" value="false"/>
+  <arg name="replay" value="false"/>
+  <arg name="replaydelay" default="5.0"/>
+  <arg name="test_duration" default="5.0"/>
+  <arg name="hzerror" default="0.5"/>
+  <arg name="wait_time" default="8" />
+  <arg name="test_name" default="hztest_$(arg resolution)x$(arg hz)_$(arg organized)"/>
+  <arg name="time_limit" default="$(eval arg('test_duration') + 30)" />
+  <arg name="pcl_topic" default="/sensor/lidar/pointcloud2" />
+  <arg name="pub_topics" default="/sensor/lidar/pointcloud2 /os1_node/imu_packets  /os1_node/lidar_packets" />
+  <arg name="out_file"  default="$(anon ouster_test)" />
+  <arg name="output_directory" default="/home/nvidia" />
+  <arg name="analyze_points" default="false" />
+  <arg name="raw" default="false" />
+  
+  <param name="$(arg test_name)/topic" value="/sensor/lidar/pointcloud2" />
+  <param name="$(arg test_name)/hz" value="$(arg hz)" />
+  <param name="$(arg test_name)/hzerror" value="$(arg hzerror)" />
+  <param name="$(arg test_name)/test_duration" value="$(arg test_duration)" />
+  <test test-name="$(arg test_name)" pkg="rostest" type="hztest" name="$(arg test_name)" time-limit="$(arg time_limit)"/>
+
+
+  <include file="$(find ouster_ros)/launch/os1_test_template.launch">
+    <arg name="resolution" value="$(arg resolution)" />
+    <arg name="hz" value="$(arg hz)" />
+    <arg name="organized" value="$(arg organized)" />
+    <arg name="replaydelay" value="$(arg replaydelay)" />
+    <arg name="self_test" value="$(arg self_test)" />
+    <arg name="pcl_topic" value="$(arg pcl_topic)" />
+    <arg name="replay" value="$(arg replay)" />
+    <arg name="os1_hostname" value="192.168.1.55"/>
+    <arg name="os1_udp_dest" value="192.168.1.1" />
+    <arg name="raw" value="$(arg raw)" />
+  </include>
+
+  <node unless="$(arg self_test)" pkg="ouster_ros" name="ROSBAG_CAPTURE" type="rosbag_record.sh" args="--output-name=$(arg output_directory)/$(arg out_file) --duration=$(arg test_duration) $(arg pub_topics) " />
+
+
+  <node if="$(arg analyze_points)" pkg="ouster_ros" name="ANALYZE_POINTS" type="check_points.py" args="" />
+
+
+  
+</launch>
