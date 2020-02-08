@@ -39,8 +39,7 @@
 
   <node unless="$(arg self_test)" pkg="ouster_ros" name="ROSBAG_CAPTURE" type="rosbag_record.sh" args="--output-name=$(arg output_directory)/$(arg out_file) --duration=$(arg test_duration) $(arg pub_topics) " />
 
-
-  <node if="$(arg analyze_points)" pkg="ouster_ros" name="ANALYZE_POINTS" type="check_points.py" args="" />
+  <node if="$(arg analyze_points)" pkg="ouster_ros" name="ANALYZE_POINTS" type="check_points.py" args="--hz $(arg hz) --resolution $(arg resolution) --error 20" />
 
 
   

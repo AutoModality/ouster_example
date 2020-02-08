@@ -10,6 +10,7 @@
   <arg name="replay" default="true"/>
   <arg name="replaydelay" default="5" />
   <arg name="raw" default="false" />
+  <arg name="ros_bag" default="$(arg self_test)" />
   
   <arg name="os1_hostname" default="192.168.1.55" doc="hostname or IP in dotted decimal form of the sensor"/>
   <arg name="os1_udp_dest" default="192.168.1.1" doc="hostname or IP where the sensor will send data packets"/>
@@ -51,7 +52,7 @@
     <remap from="~/pcl_channel" to="/os1_node/pcl_channel"/>
   </node>
 
-  <node if="$(arg self_test)" pkg="ouster_ros" name="ROSBAG" type="rosbag.sh" args="$(arg replaydelay) $(find ouster_ros)/data/$(arg organized)_$(arg resolution)x$(arg hz).bag" />
+  <node if="$(arg ros_bag)" pkg="ouster_ros" name="ROSBAG" type="rosbag.sh" args="$(arg replaydelay) $(find ouster_ros)/data/$(arg organized)_$(arg resolution)x$(arg hz).bag" />
 
 
 </launch>

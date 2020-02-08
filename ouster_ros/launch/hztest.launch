@@ -2,8 +2,9 @@
   <arg name="resolution" />
   <arg name="hz" />
   <arg name="organized" />
-  <arg name="self_test" value="true"/>
-  <arg name="replay" value="true"/>
+  <arg name="self_test" default="true"/>
+  <arg name="replay" default="true"/>
+  <arg name="ros_bag" default="$(arg self_test)" />
   <arg name="replaydelay" default="5.0"/>
   <arg name="test_duration" default="5.0"/>
   <arg name="hzerror" default="0.5"/>
@@ -24,6 +25,8 @@
     <arg name="hz" value="$(arg hz)" />
     <arg name="organized" value="$(arg organized)" />
     <arg name="replaydelay" value="$(arg replaydelay)" />
+    <arg name="self_test" value="$(arg self_test)" />
+    <arg name="ros_bag" value="$(arg ros_bag)" />
   </include>
 
 
