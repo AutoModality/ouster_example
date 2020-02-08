@@ -114,7 +114,7 @@ if (CATKIN_ENABLE_TESTING )
     
   add_rostest(launch/hztest.launch  ARGS hz:=20 resolution:=512 organized:=organized test_duration:=20 replaydelay:=10 )
   add_rostest(launch/hztest.launch  ARGS hz:=10 resolution:=512 organized:=organized test_duration:=40 replaydelay:=10 hzerror:=1.0)
-  add_rostest(launch/hztest.launch  ARGS hz:=10 resolution:=1024 organized:=organized test_duration:=30 replaydelay:=10 )
+  add_rostest(launch/hztest.launch  ARGS hz:=10 resolution:=1024 organized:=organized test_duration:=45 replaydelay:=10 hzerror:=1.3 )
   add_rostest(launch/hztest.launch  ARGS hz:=20 resolution:=1024 organized:=organized test_duration:=60 replaydelay:=10 )
   add_rostest(launch/hztest.launch  ARGS hz:=10 resolution:=2048 organized:=organized test_duration:=50 replaydelay:=10 hzerror:=1.5 )
   add_rostest(launch/hztest.launch  ARGS hz:=20 resolution:=512 organized:=unorganized test_duration:=20 replaydelay:=10 hzerror:=1.7 )
