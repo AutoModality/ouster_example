@@ -381,11 +381,6 @@ int main(int argc, char** argv) {
                                                                           tmsg.orientation.w = 1;
                                                                           imu_buf.push_back(tmsg);
                                                                           num_imus ++;
-                                                                      } else {
-                                                                          sensor_msgs::Imu imu;
-                                                                          imu.orientation.x = imu.orientation.y = imu.orientation.z = 0;
-                                                                          imu.orientation.w=1;
-                                                                          imu_pub.publish(imu);
                                                                       }
                                                                   },
       false
