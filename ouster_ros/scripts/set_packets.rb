@@ -13,10 +13,14 @@ ENCODER_TICKS_PER_REV = 90112
 
 
 shape = :SPHERE
-
+radius = 1000
 
 def nth_col(n,buf)
   buf[(n * COLUMN_BYTES)..buf.length-1]
+end
+
+def set_nth_col(n,buf,col_buf)
+  buf[(n * COLUMN_BYTES)..buf.length-1] = col_buf
 end
 
 def col_measurement_id(col_buf)
@@ -42,6 +46,11 @@ end
 def nth_px(n, col_buf)
   col_buf[(0 + 16 + n * PIXEL_BYTES)..col_buf.length-1]
 end
+
+def set_nth_px(n,col_buf, px_buf )
+  col_buf[(0 + 16 + n * PIXEL_BYTES)..col_buf.length-1] = px_buf
+end
+
 
 def px_range(px_buf) 
   px_buf[0..3].pack("C4").unpack("L")[0] & 0x000fffff
@@ -117,41 +126,61 @@ end
 H = 64
 W = 512
 
+class Array
+  def to_yaml_style
+    :inline
+  end
+end
+
+
 xyz_lut = make_xyz_lut(W,H,BEAM_AZIMUTH_ANGLES,BEAM_ALTITUDE_ANGLES)
 fp = File.open(ARGV[0])
 fp.readlines.each { |d|
   next if d =~ /^---/
-  buf = YAML.load(d)["buf"]
+  #byebug
+  buffer = YAML.load(d)["buf"]
+  tmpbuffer =  buffer.dup
   (0..COLUMNS_PER_BUFFER-1).each { |icol|
     # byebug
-    col_buf = nth_col(icol, buf)
+    col_buf = nth_col(icol, buffer)
     m_id = col_measurement_id(col_buf);
     f_id = col_frame_id(col_buf);
     ts = col_timestamp(col_buf);
     valid = col_valid(col_buf) == 0xffffffff;
-    STDERR.puts "M_id(#{m_id}) F_ID(#{f_id})"
+    #STDERR.puts "M_id(#{m_id}) F_ID(#{f_id})"
     # const uint8_t* px_buf = OS1::nth_px(ipx, col_buf);
     # uint32_t r = OS1::px_range(px_buf);
     # r = 1000;
     # int ind = 3 * (idx + ipx);
-    byebug
     idx = H * m_id;
     (0..H-1).each { |ipx|
-      px_buf = nth_px(ipx, col_buf);
-      r      = px_range(px_buf);
-      ind    = 3*(idx+ipx)
-      (r * 0.001 * xyz_lut[ind + 0],r * 0.001 * xyz_lut[ind + 1],r * 0.001 * xyz_lut[ind + 2])
+      if ( (ipx + 2 ) % 4 == 0) 
+        px_buf = nth_px(ipx, col_buf);
+        r      = px_range(px_buf);
+        ind    = 3*(idx+ipx)
+        # (r * 0.001 * xyz_lut[ind + 0],r * 0.001 * xyz_lut[ind + 1],r * 0.001 * xyz_lut[ind + 2])
+        #byebug
+        tmpcol_buf = col_buf.dup
+        tmppx_buf =  px_buf.dup
+        tmp_buf = buffer.dup
+        if shape == :SPHERE
+          set_px_range(px_buf, radius)
+        # puts ""
+        else
+          
+        end
+        set_nth_px( ipx, col_buf, px_buf )
+        set_nth_col(icol,buffer, col_buf )
+        # puts ""
+      end
     }
-
-    if shape == :SPHERE
-      
-    else
-
-    end
-
   }
-  # byebug
-  puts ""
+  
+  #byebug
+  # d = {"buf" => buffer }
+  # puts YAML.dump(d)
+  puts "buf: #{buffer}"
+  puts "---"
 }
 
 
