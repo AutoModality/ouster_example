@@ -5,7 +5,7 @@ devel/
 logs/
 install/
 doc/
-debian/ros-kinetic-am-ouster*
+debian/ros-*-am-ouster*
 debian/source
 debian/*-stamp
 debian/files

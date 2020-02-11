@@ -1,12 +1,12 @@
-Source: ros-kinetic-am-ouster
+Source: ros-melodic-am-ouster
 Section: misc
 Priority: extra
 Maintainer: info <info@automodality.com>
-Build-Depends: debhelper (>= 9.0.0), ros-kinetic-catkin, ros-kinetic-geometry-msgs, ros-kinetic-message-generation, ros-kinetic-nav-msgs, ros-kinetic-rosconsole, ros-kinetic-roscpp, ros-kinetic-rostime, ros-kinetic-sensor-msgs, ros-kinetic-std-msgs, ros-kinetic-latency-testing , ros-kinetic-rospy, ros-kinetic-rostest, libgtest-dev
+Build-Depends: debhelper (>= 9.0.0), ros-melodic-catkin, ros-melodic-geometry-msgs, ros-melodic-message-generation, ros-melodic-nav-msgs, ros-melodic-rosconsole, ros-melodic-roscpp, ros-melodic-rostime, ros-melodic-sensor-msgs, ros-melodic-std-msgs, ros-melodic-latency-testing , ros-melodic-rospy, ros-melodic-rostest, libgtest-dev
 Homepage: https://github.com/AutoModality/am-utils
 Standards-Version: 3.9.2
 
-Package: ros-kinetic-am-ouster
+Package: ros-melodic-am-ouster
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, ros-kinetic-geometry-msgs, ros-kinetic-message-runtime, ros-kinetic-nav-msgs, ros-kinetic-rosconsole, ros-kinetic-roscpp, ros-kinetic-rostime, ros-kinetic-sensor-msgs, ros-kinetic-std-msgs, ros-kinetic-latency-testing , ros-kinetic-rospy, ros-kinetic-rostest
+Depends: ${shlibs:Depends}, ${misc:Depends}, ros-melodic-geometry-msgs, ros-melodic-message-runtime, ros-melodic-nav-msgs, ros-melodic-rosconsole, ros-melodic-roscpp, ros-melodic-rostime, ros-melodic-sensor-msgs, ros-melodic-std-msgs, ros-melodic-latency-testing , ros-melodic-rospy, ros-melodic-rostest
 Description: The am ouster package
