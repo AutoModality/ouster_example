@@ -4,7 +4,7 @@ on:
     branches:
       - master
 jobs:
-  build:
+  package:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
