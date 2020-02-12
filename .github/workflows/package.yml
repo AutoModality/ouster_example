@@ -12,18 +12,13 @@ jobs:
       fail-fast: true
     steps:
       - uses: actions/checkout@v1
-      - name: Generate build number
-        id: buildnumber
-        uses: einaregilsson/build-number@v2 
-        with:
-          token: ${{secrets.github_token}}
       - name: Package
         id: package
         uses: AutoModality/action-package-debian-ros@v1.3.2
         with:
           branch: ${{ github.event.pull_request.head.ref }}
           pull-request-number: ${{ github.event.number }}
-          build-number: ${{ steps.buildnumber.outputs.build_number }}
+          build-number: ${{ github.run_number }}
           release-repo-entitlement: ${{ secrets.CLOUDSMITH_READ_RELEASE_ENTITLEMENT }}
       - name: The generated package
         run: echo "The artifact is ${{ steps.package.outputs.artifact-path }}"
