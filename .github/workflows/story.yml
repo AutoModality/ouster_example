@@ -6,31 +6,13 @@ on:
       - master
 jobs:
   build:
-    runs-on: ubuntu-16.04
+    runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v1
       - name: Package
         id: package
-        uses: AutoModality/action-package-debian-ros@v1.2.1
+        uses: AutoModality/action-package-debian-ros@v1.3.2
         with:
           dev-repo-entitlement: ${{ secrets.CLOUDSMITH_READ_DEV_ENTITLEMENT }}
           release-repo-entitlement: ${{ secrets.CLOUDSMITH_READ_RELEASE_ENTITLEMENT }}
       
-      # - name: build_depends
-      #   run: |
-      #     echo "Test"
-      # - name: install_build_deps
-      #   run: |
-      #     sudo apt-get install -y devscripts equivs
-
-      # - name: force_amutils
-      #   run: |
-      #     sudo apt-get install ros-kinetic-am-utils
-
-      # - name: install_depends
-      #   run: |
-      #     sudo mk-build-deps --install --tool='apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends --yes' debian/control
-
-#      - name: make
-#        uses: AutoModality/action-make-ros@v1.0.0
-
