@@ -201,9 +201,21 @@ fp.readlines.each { |d|
           #   byebug
           # end
           if y >= 0 
-            if angle >= 0 && angle < Math::PI/4
-            elsif angle >= Math::PI/4 && angle < Math::PI/2
+            # if angle >= 0 && angle < Math::PI/4
+            # elsif angle >= Math::PI/4 && angle < Math::PI/2
+            # end
+            if (angle >= Math::PI/4 && angle < Math::PI/2) ||
+               (angle <= -Math::PI/4 && angle > -Math::PI/2 )
+              # STDERR.puts "HERE"
+              y = +1.0
+              r = (y.round / (0.001 * xyz_lut[ind+1])).to_i
+            elsif (angle > 0 && angle < Math::PI/4) ||
+                  (angle < 0 && angle >= -Math::PI/4)
+              STDERR.puts "HERE2"
+              x = -1.0
+              r = (x.round / (0.001 * xyz_lut[ind+0])).to_i
             end
+
           else
             # if y < 0 && x >= 0
             #   byebug
