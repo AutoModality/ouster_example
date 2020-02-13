@@ -196,19 +196,38 @@ fp.readlines.each { |d|
           x = r * 0.001 * xyz_lut[ind + 0]
           y = r * 0.001 * xyz_lut[ind + 1]
           angle = Math.atan(y/x)
+
+          # if ( y < 0 && x > 0 && y.abs > x.abs  )
+          #   byebug
+          # end
           if y >= 0 
             if angle >= 0 && angle < Math::PI/4
             elsif angle >= Math::PI/4 && angle < Math::PI/2
             end
-            #r= 0
           else
-            if angle >= 3*Math::PI/8 && angle < Math::PI/2
+            # if y < 0 && x >= 0
+            #   byebug
+            # end
+            if (angle >= Math::PI/4 && angle < Math::PI/2) ||
+               (angle <= -Math::PI/4 && angle > -Math::PI/2 )
               STDERR.puts "HERE"
               y = -1.0
-              rtmp = (y.round / (0.001 * xyz_lut[ind+1])).to_i
+              r = (y.round / (0.001 * xyz_lut[ind+1])).to_i
+              # rtmp = (y.round / (0.001 * xyz_lut[ind+1])).to_i
+              # rvals = (rtmp-200..rtmp+200).to_a
+              # vals = (0..rvals.length-1).collect { |rt| 
+              #   [rt,Math.sqrt((rvals[rt] * 0.001 * xyz_lut[ind + 1] - -1.0 )**2)]
+              # }
+              # index = vals.sort { |a,b| a[1] <=> b[1] }[0][0]
+              # r = rvals[index]# + rand(10) - rand(5)
+            elsif (angle > 0 && angle < Math::PI/4) ||
+                  (angle < 0 && angle >= -Math::PI/4)
+              STDERR.puts "HERE2"
+              x = -1.0
+              rtmp = (x.round / (0.001 * xyz_lut[ind+0])).to_i
               rvals = (rtmp-200..rtmp+200).to_a
               vals = (0..rvals.length-1).collect { |rt| 
-                [rt,Math.sqrt((rvals[rt] * 0.001 * xyz_lut[ind + 1] - -1.0 )**2)]
+                [rt,Math.sqrt((rvals[rt] * 0.001 * xyz_lut[ind + 0] - -1.0 )**2)]
               }
               index = vals.sort { |a,b| a[1] <=> b[1] }[0][0]
               r = rvals[index]# + rand(10) - rand(5)
