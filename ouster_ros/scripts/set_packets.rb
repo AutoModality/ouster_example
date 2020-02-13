@@ -2,7 +2,7 @@
 
 
 require 'yaml'
-#require 'math'
+require 'bigdecimal'
 
 PIXELS_PER_COLUMN = 64;
 COLUMNS_PER_BUFFER = 16
@@ -12,7 +12,7 @@ ENCODER_TICKS_PER_REV = 90112
 
 
 
-shape = :SPHERE
+shape = :CUBE
 radius = 1000
 
 def nth_col(n,buf)
@@ -61,7 +61,7 @@ def set_px_range(px_buf,val)
   px_buf[0..3] = [val].pack("L").unpack("C4")
 end
 
-if true
+if false
 
 BEAM_ALTITUDE_ANGLES = [
     16.611,  16.084,  15.557,  15.029,  14.502,  13.975,  13.447,  12.920,
@@ -103,16 +103,33 @@ LIDAR_TO_SENSOR_TRANSFORM= [-1.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 
 
 end
 
+    # const int n = W * H;
+    # std::vector<double> xyz = std::vector<double>(3 * n, 0);
+
+    # for (int icol = 0; icol < W; icol++) {
+    #     double h_angle_0 = 2.0 * M_PI * icol / W;
+    #     for (int ipx = 0; ipx < H; ipx++) {
+    #         int ind = 3 * (icol * H + ipx);
+    #         double h_angle =
+    #             (azimuth_angles.at(ipx) * 2 * M_PI / 360.0) + h_angle_0;
+
+    #         xyz[ind + 0] = std::cos(altitude_angles[ipx] * 2 * M_PI / 360.0) *
+    #                        std::cos(h_angle);
+    #         xyz[ind + 1] = -std::cos(altitude_angles[ipx] * 2 * M_PI / 360.0) *
+    #                        std::sin(h_angle);
+    #         xyz[ind + 2] = std::sin(altitude_angles[ipx] * 2 * M_PI / 360.0);
+    #     }
+    # }
+
+
 def make_xyz_lut(w,h,azimuth_angles,altitude_angles)
   n = w * h;
   xyz = Array.new(3 * n,0)
   (0..w-1).each { |icol| 
-    h_angle_0 = 2.0 * Math::PI/2 * icol / w;
+    h_angle_0 = 2.0 * Math::PI * icol / w # 2.0 * Math::PI/2 * icol / w;
     (0..h-1).each { |ipx| 
       ind = 3 * (icol * h + ipx);
-     
       h_angle = (azimuth_angles[ipx] * 2 * Math::PI / 360.0) + h_angle_0;
-              
       xyz[ind + 0] = Math.cos(altitude_angles[ipx] * 2 * Math::PI / 360.0) *
                      Math.cos(h_angle)
       xyz[ind + 1] = -Math.cos(altitude_angles[ipx] * 2 * Math::PI / 360.0) *
@@ -134,20 +151,29 @@ end
 
 
 xyz_lut = make_xyz_lut(W,H,BEAM_AZIMUTH_ANGLES,BEAM_ALTITUDE_ANGLES)
+#byebug
+fp = File.open("xyz_lut.yaml","w")
+fp.write("---\n")
+xyz_lut.each { |i| 
+  #byebug
+  i = BigDecimal(i.to_s)
+  fp.write(sprintf("- %4.4f\n",i.round(4)))
+}
+fp.close()
+
+# File.write("xyz_lut.yaml", xyz_lut.to_yaml )
 fp = File.open(ARGV[0])
 fp.readlines.each { |d|
   next if d =~ /^---/
-  #byebug
   buffer = YAML.load(d)["buf"]
   tmpbuffer =  buffer.dup
   (0..COLUMNS_PER_BUFFER-1).each { |icol|
-    # byebug
     col_buf = nth_col(icol, buffer)
     m_id = col_measurement_id(col_buf);
     f_id = col_frame_id(col_buf);
     ts = col_timestamp(col_buf);
     valid = col_valid(col_buf) == 0xffffffff;
-    #STDERR.puts "M_id(#{m_id}) F_ID(#{f_id})"
+    STDERR.puts "M_id(#{m_id}) F_ID(#{f_id})"
     # const uint8_t* px_buf = OS1::nth_px(ipx, col_buf);
     # uint32_t r = OS1::px_range(px_buf);
     # r = 1000;
@@ -159,26 +185,52 @@ fp.readlines.each { |d|
         r      = px_range(px_buf);
         ind    = 3*(idx+ipx)
         # (r * 0.001 * xyz_lut[ind + 0],r * 0.001 * xyz_lut[ind + 1],r * 0.001 * xyz_lut[ind + 2])
-        #byebug
         tmpcol_buf = col_buf.dup
         tmppx_buf =  px_buf.dup
         tmp_buf = buffer.dup
         if shape == :SPHERE
           set_px_range(px_buf, radius)
-        # puts ""
+          set_nth_px( ipx, col_buf, px_buf )
+          set_nth_col(icol,buffer, col_buf )
         else
-          
+          x = r * 0.001 * xyz_lut[ind + 0]
+          y = r * 0.001 * xyz_lut[ind + 1]
+          angle = Math.atan(y/x)
+          if y >= 0 
+            if angle >= 0 && angle < Math::PI/4
+            elsif angle >= Math::PI/4 && angle < Math::PI/2
+            end
+            #r= 0
+          else
+            if angle >= 3*Math::PI/8 && angle < Math::PI/2
+              STDERR.puts "HERE"
+              y = -1.0
+              rtmp = (y.round / (0.001 * xyz_lut[ind+1])).to_i
+              rvals = (rtmp-200..rtmp+200).to_a
+              vals = (0..rvals.length-1).collect { |rt| 
+                [rt,Math.sqrt((rvals[rt] * 0.001 * xyz_lut[ind + 1] - -1.0 )**2)]
+              }
+              index = vals.sort { |a,b| a[1] <=> b[1] }[0][0]
+              r = rvals[index]# + rand(10) - rand(5)
+            else
+              #r = 0
+            end
+          end
+          yafter = r * 0.001 * xyz_lut[ind + 1]
+          xafter = r * 0.001 * xyz_lut[ind + 0]
+
+          set_px_range(px_buf, r.abs.to_i )
+          set_nth_px( ipx, col_buf, px_buf )
+          set_nth_col(icol,buffer, col_buf )
+          STDERR.puts "#{[r * 0.001 * xyz_lut[ind + 0],r * 0.001 * xyz_lut[ind + 1],r * 0.001 * xyz_lut[ind + 2]]}"
         end
-        set_nth_px( ipx, col_buf, px_buf )
-        set_nth_col(icol,buffer, col_buf )
+
         # puts ""
       end
     }
   }
+  STDERR.puts("\n")
   
-  #byebug
-  # d = {"buf" => buffer }
-  # puts YAML.dump(d)
   puts "buf: #{buffer}"
   puts "---"
 }
