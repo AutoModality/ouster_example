@@ -213,24 +213,11 @@ fp.readlines.each { |d|
               STDERR.puts "HERE"
               y = -1.0
               r = (y.round / (0.001 * xyz_lut[ind+1])).to_i
-              # rtmp = (y.round / (0.001 * xyz_lut[ind+1])).to_i
-              # rvals = (rtmp-200..rtmp+200).to_a
-              # vals = (0..rvals.length-1).collect { |rt| 
-              #   [rt,Math.sqrt((rvals[rt] * 0.001 * xyz_lut[ind + 1] - -1.0 )**2)]
-              # }
-              # index = vals.sort { |a,b| a[1] <=> b[1] }[0][0]
-              # r = rvals[index]# + rand(10) - rand(5)
             elsif (angle > 0 && angle < Math::PI/4) ||
                   (angle < 0 && angle >= -Math::PI/4)
               STDERR.puts "HERE2"
               x = -1.0
-              rtmp = (x.round / (0.001 * xyz_lut[ind+0])).to_i
-              rvals = (rtmp-200..rtmp+200).to_a
-              vals = (0..rvals.length-1).collect { |rt| 
-                [rt,Math.sqrt((rvals[rt] * 0.001 * xyz_lut[ind + 0] - -1.0 )**2)]
-              }
-              index = vals.sort { |a,b| a[1] <=> b[1] }[0][0]
-              r = rvals[index]# + rand(10) - rand(5)
+              r = (x.round / (0.001 * xyz_lut[ind+0])).to_i
             else
               #r = 0
             end
