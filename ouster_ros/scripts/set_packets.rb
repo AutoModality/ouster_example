@@ -197,13 +197,7 @@ fp.readlines.each { |d|
           y = r * 0.001 * xyz_lut[ind + 1]
           angle = Math.atan(y/x)
 
-          # if ( y < 0 && x > 0 && y.abs > x.abs  )
-          #   byebug
-          # end
           if y >= 0 
-            # if angle >= 0 && angle < Math::PI/4
-            # elsif angle >= Math::PI/4 && angle < Math::PI/2
-            # end
             if (angle >= Math::PI/4 && angle < Math::PI/2) ||
                (angle <= -Math::PI/4 && angle > -Math::PI/2 )
               # STDERR.puts "HERE"
@@ -217,9 +211,6 @@ fp.readlines.each { |d|
             end
 
           else
-            # if y < 0 && x >= 0
-            #   byebug
-            # end
             if (angle >= Math::PI/4 && angle < Math::PI/2) ||
                (angle <= -Math::PI/4 && angle > -Math::PI/2 )
               STDERR.puts "HERE"
