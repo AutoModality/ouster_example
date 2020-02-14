@@ -103,25 +103,6 @@ LIDAR_TO_SENSOR_TRANSFORM= [-1.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 
 
 end
 
-    # const int n = W * H;
-    # std::vector<double> xyz = std::vector<double>(3 * n, 0);
-
-    # for (int icol = 0; icol < W; icol++) {
-    #     double h_angle_0 = 2.0 * M_PI * icol / W;
-    #     for (int ipx = 0; ipx < H; ipx++) {
-    #         int ind = 3 * (icol * H + ipx);
-    #         double h_angle =
-    #             (azimuth_angles.at(ipx) * 2 * M_PI / 360.0) + h_angle_0;
-
-    #         xyz[ind + 0] = std::cos(altitude_angles[ipx] * 2 * M_PI / 360.0) *
-    #                        std::cos(h_angle);
-    #         xyz[ind + 1] = -std::cos(altitude_angles[ipx] * 2 * M_PI / 360.0) *
-    #                        std::sin(h_angle);
-    #         xyz[ind + 2] = std::sin(altitude_angles[ipx] * 2 * M_PI / 360.0);
-    #     }
-    # }
-
-
 def make_xyz_lut(w,h,azimuth_angles,altitude_angles)
   n = w * h;
   xyz = Array.new(3 * n,0)
@@ -174,17 +155,12 @@ fp.readlines.each { |d|
     ts = col_timestamp(col_buf);
     valid = col_valid(col_buf) == 0xffffffff;
     STDERR.puts "M_id(#{m_id}) F_ID(#{f_id})"
-    # const uint8_t* px_buf = OS1::nth_px(ipx, col_buf);
-    # uint32_t r = OS1::px_range(px_buf);
-    # r = 1000;
-    # int ind = 3 * (idx + ipx);
     idx = H * m_id;
     (0..H-1).each { |ipx|
       if ( (ipx + 2 ) % 4 == 0) 
         px_buf = nth_px(ipx, col_buf);
         r      = px_range(px_buf);
         ind    = 3*(idx+ipx)
-        # (r * 0.001 * xyz_lut[ind + 0],r * 0.001 * xyz_lut[ind + 1],r * 0.001 * xyz_lut[ind + 2])
         tmpcol_buf = col_buf.dup
         tmppx_buf =  px_buf.dup
         tmp_buf = buffer.dup
