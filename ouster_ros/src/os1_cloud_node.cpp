@@ -13,6 +13,8 @@
 #include <boost/circular_buffer.hpp>
 #include <vector>
 #include <atomic>
+#include <fstream>
+#include <sstream>
 
 #include "ouster/os1_packet.h"
 #include "ouster/os1_util.h"
@@ -68,11 +70,44 @@ void filter_pointcloud(CloudOS1 &incloud, CloudOS1 &out_pc)
     // return out_pc;
 }
 
+// OS1::make_xyz_lut               // 
+void debug_configuration(std::vector<double> &xyz_lut, 
+                         std::vector<double> &beam_azimuth_angles,
+                         std::vector<double> &beam_altitude_angles )
+{
+#ifdef DEBUG_LUT
+    std::ofstream myfile;
+    myfile.open("/home/jdamon/xyz_lut1.yaml");
+    myfile << "---\n";
+    myfile.unsetf ( std::ios::floatfield );
+    for ( auto it=xyz_lut.begin() ; it < xyz_lut.end(); it++ ) {
+      myfile << "- " << std::setprecision(4) << *it << "\n";
+    }
+    myfile.close();
+#endif
+    std::ostringstream ss,ss2;
+    ss << "BEAM_AZIMUTH_ANGLES = [ ";
+    for ( auto it=beam_azimuth_angles.begin() ; it + 1< beam_azimuth_angles.end(); it++ ) {
+      ss << *it << ", ";
+    }
+    auto it2 = beam_azimuth_angles.end() - 1;
+    ss << *it2 << " ]";
+    ROS_DEBUG(ss.str().c_str());
+    ss2.clear();
+    ss2 << "BEAM_ALTITUDE_ANGLES = [ ";
+    for ( auto it=beam_altitude_angles.begin() ; it + 1< beam_altitude_angles.end(); it++ ) {
+      ss2 << *it << ", ";
+    }
+    it2 = beam_altitude_angles.end() - 1;
+    ss2 << *it2 << " ]";
+    ROS_DEBUG(ss2.str().c_str());
+    
+}
+
 int main(int argc, char** argv) {
     ros::init(argc, argv, "os1_cloud_node");
     ros::NodeHandle nh("~");
     ros::Publisher channel_pubs[OS1::columns_per_buffer];
-    
     // ros::Publisher
     
     auto imu_topic        = nh.param("imu_topic", std::string{"/dji_sdk/imu"});
@@ -84,7 +119,6 @@ int main(int argc, char** argv) {
     auto publish_raw_pc2  = nh.param("publish_raw_pointcloud", bool{false});
     auto organized        = nh.param("organized", bool{false});
     auto self_test        = nh.param("self_test", bool{false});
-    ROS_ERROR_STREAM("ORganized is " << organized );
     auto raw              = nh.param("raw"      , bool{false} ); // Use the raw point cloud
     auto min_distance     = nh.param("min_distance", double{0.5} );
     
@@ -121,24 +155,8 @@ int main(int argc, char** argv) {
     auto xyz_lut = OS1::make_xyz_lut(W, H, cfg.response.beam_azimuth_angles,
                                      cfg.response.beam_altitude_angles);
 
-    std::cout << "BEAM_AZIMUTH_ANGLES = [ ";
-    for ( auto it=cfg.response.beam_azimuth_angles.begin() ; it + 1< cfg.response.beam_azimuth_angles.end(); it++ ) {
-      std::cout << *it << ", ";
-    }
-    auto it2 = cfg.response.beam_azimuth_angles.end() - 1;
-    std::cout << *it2 << " ]";
-    std::cout << "\n\n";
+    debug_configuration( xyz_lut, cfg.response.beam_azimuth_angles, cfg.response.beam_altitude_angles );
 
-    std::cout << "BEAM_ALTITUDE_ANGLES = [ ";
-    for ( auto it=cfg.response.beam_altitude_angles.begin() ; it + 1< cfg.response.beam_altitude_angles.end(); it++ ) {
-      std::cout << *it << ", ";
-    }
-    it2 = cfg.response.beam_altitude_angles.end() - 1;
-    std::cout << *it2 << " ]";
-    std::cout << "\n\n";
-
-    // std::cout << cfg.response.beam_azimuth_angles << "\n\n";
-    // std::cout << cfg.response.beam_altitude_angles << "\n\n";
 
     CloudOS1 cloud{W, H};
     auto it = cloud.begin();
