@@ -32,6 +32,8 @@ def parse_args():
                         help='Organized or Unorganized pointcloud')
     parser.add_argument('-R', '--raw', action="store_true",default=False,
                         help='Use Raw point cloud ')
+    parser.add_argument('--nofixture', action="store_true",default=False,
+                        help='Don\'t use the test fixture')
 
     parser.add_argument('-H', '--hz' , type=int, help="frequency to run ouster at")
     parser.add_argument('-E', '--hzerror' , type=float, default=0.5, help="Hertz error")
@@ -57,7 +59,8 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
-    cmd = 'rostest ouster_ros hztest_fixture.launch  hz:=%d hzerror:=%f resolution:=%d organized:=%s test_duration:=%d out_file:=%s output_directory:=%s raw:=%s' % ( args.hz,args.hzerror,args.resolution, args.organized,args.duration,args.output_file, args.output_directory, args.raw )
+    launch_file = "hztest.launch" if args.nofixture  else "hztest_fixture.launch"
+    cmd = 'rostest ouster_ros %s  hz:=%d hzerror:=%f resolution:=%d organized:=%s test_duration:=%d out_file:=%s output_directory:=%s raw:=%s' % ( launch_file, args.hz,args.hzerror,args.resolution, args.organized,args.duration,args.output_file, args.output_directory, args.raw )
     print("Running '%s'" % (cmd)) 
     os.system(cmd)
     

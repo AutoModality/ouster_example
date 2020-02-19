@@ -12,8 +12,8 @@
   <arg name="raw" default="false" />
   <arg name="ros_bag" default="$(arg self_test)" />
   
-  <arg name="os1_hostname" default="192.168.1.55" doc="hostname or IP in dotted decimal form of the sensor"/>
-  <arg name="os1_udp_dest" default="192.168.1.1" doc="hostname or IP where the sensor will send data packets"/>
+  <arg name="os1_hostname" default="127.0.0.1" doc="hostname or IP in dotted decimal form of the sensor"/>
+  <arg name="os1_udp_dest" default="127.0.0.1" doc="hostname or IP where the sensor will send data packets"/>
   <arg name="os1_lidar_port" default="7502" doc="port to which the sensor should send lidar data"/>
   <arg name="os1_imu_port" default="7503" doc="port to which the sensor should send imu data"/>
 
@@ -41,8 +41,13 @@
     <param name="~/metadata" value="$(arg metadata)"/>
   </node>
 
+
+  <node pkg="ouster_ros" name="NC" type="nc.sh" />
+
   <env name="GMON_OUT_PREFIX" value="os1_cloud_node_gmon_name" />
-  <node pkg="ouster_ros" type="os1_cloud_node" name="os1_cloud_node" output="screen" respawn="true">
+  <node pkg="ouster_ros" type="os1_cloud_node" name="os1_cloud_node" output="screen"
+        >
+        <!-- launch-prefix="/home/jdamon/Scripts/ros_tmux_other_window" -->
     <param name="~/raw" value="$(arg raw)"/>
     <param name="~/organized" value="true"/>
     <param name="~/self_test" value="$(arg self_test)" />
