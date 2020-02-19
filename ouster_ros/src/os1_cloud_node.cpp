@@ -18,6 +18,7 @@
 
 #include "ouster/os1_packet.h"
 #include "ouster/os1_util.h"
+#include "ouster/os1_am.h"
 #include "ouster_ros/OS1ConfigSrv.h"
 #include "ouster_ros/PacketMsg.h"
 #include "ouster_ros/os1_ros.h"
@@ -69,6 +70,7 @@ void filter_pointcloud(CloudOS1 &incloud, CloudOS1 &out_pc)
     }
     // return out_pc;
 }
+
 
 // OS1::make_xyz_lut               // 
 void debug_configuration(std::vector<double> &xyz_lut, 
@@ -122,7 +124,9 @@ int main(int argc, char** argv) {
     auto raw              = nh.param("raw"      , bool{false} ); // Use the raw point cloud
     auto min_distance     = nh.param("min_distance", double{0.5} );
     
-    
+    boost::circular_buffer<std::shared_ptr<PacketMsg>> cb(3);
+// const PacketMsg& pm
+
     std::atomic_uint  num_imus{0};
 
     am::DEFAULT_UPDATE_DELAY=1;// Update every second
@@ -162,7 +166,7 @@ int main(int argc, char** argv) {
     auto it = cloud.begin();
     sensor_msgs::PointCloud2 msg{};
 
-    auto batch_and_publish = OS1::batch_to_iter<CloudOS1::iterator>(
+    auto batch_and_publish = OS1::am_batch_to_iter<CloudOS1::iterator>(
         xyz_lut, W, H, {}, &PointOS1::make,
         [&](uint64_t scan_ts) mutable {
             msg = ouster_ros::OS1::cloud_to_cloud_msg(
@@ -171,8 +175,19 @@ int main(int argc, char** argv) {
         });
 
     auto lidar_handler = [&](const PacketMsg& pm) mutable {
-        batch_and_publish(pm.buf.data(), it);
-    };
+
+        cb.push_back(std::make_shared<PacketMsg>(pm));
+
+        std::shared_ptr<PacketMsg> tmppm;
+
+        while ( cb.size() > 0 ) {
+            tmppm = cb.front();
+            batch_and_publish(tmppm->buf.data(), it);
+            cb.pop_front();
+        }
+            
+        };
+
 
     auto imu_handler = [&](const PacketMsg& p) {
         imu_pub.publish(ouster_ros::OS1::packet_to_imu_msg(p, imu_frame));
