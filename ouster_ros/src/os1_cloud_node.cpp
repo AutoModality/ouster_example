@@ -22,8 +22,6 @@
 #include "ouster_ros/OS1ConfigSrv.h"
 #include "ouster_ros/PacketMsg.h"
 #include "ouster_ros/os1_ros.h"
-//#include <latency_testing/DelayStatistics.h>
-//#include <latency_testing/Concerns.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/LinearMath/Transform.h>
@@ -32,7 +30,8 @@
 #include <tf2/convert.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <latency_testing/DelayStatistics.h>
-
+//#include <latency_testing/DelayStatistics.h>
+//#include <latency_testing/Concerns.h>
 
 
 using PacketMsg = ouster_ros::PacketMsg;
@@ -74,7 +73,6 @@ void filter_pointcloud(CloudOS1 &incloud, CloudOS1 &out_pc)
 }
 
 
-// OS1::make_xyz_lut               // 
 void debug_configuration(std::vector<double> &xyz_lut, 
                          std::vector<double> &beam_azimuth_angles,
                          std::vector<double> &beam_altitude_angles )
