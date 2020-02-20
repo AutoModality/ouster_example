@@ -33,6 +33,8 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <latency_testing/DelayStatistics.h>
 
+
+
 using PacketMsg = ouster_ros::PacketMsg;
 using CloudOS1 = ouster_ros::OS1::CloudOS1;
 using PointOS1 = ouster_ros::OS1::PointOS1;
@@ -129,6 +131,8 @@ int main(int argc, char** argv) {
 
     std::atomic_uint  num_imus{0};
 
+
+
     am::DEFAULT_UPDATE_DELAY=1;// Update every second
 
 
@@ -166,6 +170,8 @@ int main(int argc, char** argv) {
     auto it = cloud.begin();
     sensor_msgs::PointCloud2 msg{};
 
+    boost::circular_buffer<sensor_msgs::Imu> imu_buf(1000);
+
     auto batch_and_publish = OS1::am_batch_to_iter<CloudOS1::iterator>(
         xyz_lut, W, H, {}, &PointOS1::make,
         [&](uint64_t scan_ts) mutable {
@@ -187,6 +193,26 @@ int main(int argc, char** argv) {
         }
             
         };
+
+    auto external_imu_cb = [&]( const sensor_msgs::Imu::ConstPtr &imu_msg) {
+                               auto tmp = std::sqrt( imu_msg->orientation.x*imu_msg->orientation.x +
+                                                     imu_msg->orientation.y*imu_msg->orientation.y +
+                                                     imu_msg->orientation.z*imu_msg->orientation.z +
+                                                     imu_msg->orientation.w*imu_msg->orientation.w );
+                               if ( tmp < 0.6 ) {
+                                   ROS_ERROR_STREAM_THROTTLE(1,"Getting invalid IMU (" << 
+                                                             imu_msg->orientation.x << "," << 
+                                                             imu_msg->orientation.y << "," << 
+                                                             imu_msg->orientation.z << "," << 
+                                                             imu_msg->orientation.w << ")" );
+                               } else {
+                                   ROS_DEBUG_THROTTLE(1,"Getting IMUs");
+                                   imu_buf.push_back(*imu_msg);
+                               }
+                           };
+
+    auto external_imu_handler = nh.subscribe<sensor_msgs::Imu>(imu_topic, 100, external_imu_cb );
+
 
 
     auto imu_handler = [&](const PacketMsg& p) {
