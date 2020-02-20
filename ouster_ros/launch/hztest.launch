@@ -11,7 +11,7 @@
   <arg name="wait_time" default="8" />
   <arg name="test_name" default="hztest_$(arg resolution)x$(arg hz)_$(arg organized)"/>
   <arg name="time_limit" default="120" />
-  <arg name="rosconsole" default="false" />
+  <arg name="rosconsole" default="" />
 
   <param name="$(arg test_name)/topic" value="/sensor/lidar/pointcloud2" />
   <param name="$(arg test_name)/hz" value="$(arg hz)" />
@@ -19,7 +19,7 @@
   <param name="$(arg test_name)/test_duration" value="$(arg test_duration)" />
   <test test-name="$(arg test_name)" pkg="rostest" type="hztest" name="$(arg test_name)" time-limit="$(arg time_limit)"/>
 
-  <env if="$(arg rosconsole)" name="ROSCONSOLE_CONFIG_FILE" value="$(find ouster_ros)/launch/rosconsole.config"/>  
+  <env if="$(eval False if arg('rosconsole') == '' else True )" name="ROSCONSOLE_CONFIG_FILE" value="$(arg rosconsole)"/>  
   <include file="$(find ouster_ros)/launch/os1_test_template.launch">
     <arg name="resolution" value="$(arg resolution)" />
     <arg name="hz" value="$(arg hz)" />
