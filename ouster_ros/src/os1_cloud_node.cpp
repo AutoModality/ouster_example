@@ -179,14 +179,19 @@ int main(int argc, char** argv) {
         });
 
     auto lidar_handler = [&](const PacketMsg& pm) mutable {
-
+        static int val = 0;
         cb.push_back(std::make_shared<PacketMsg>(pm));
 
+        // while(val == 0 ){
+
+        //   sleep(1);
+        // }
         std::shared_ptr<PacketMsg> tmppm;
 
         while ( cb.size() > 0 ) {
             tmppm = cb.front();
             batch_and_publish(tmppm->buf.data(), it);
+            ROS_DEBUG_THROTTLE(1,"LIDAR !");                           
             cb.pop_front();
         }
             
@@ -204,7 +209,7 @@ int main(int argc, char** argv) {
                                                              imu_msg->orientation.z << "," << 
                                                              imu_msg->orientation.w << ")" );
                                } else {
-                                   ROS_DEBUG_THROTTLE(1,"Getting IMUs");
+                                   ROS_DEBUG_THROTTLE(1,"IMU !!");
                                    imu_buf.push_back(*imu_msg);
                                }
                            };
@@ -232,6 +237,9 @@ int main(int argc, char** argv) {
         cfg.response.lidar_to_sensor_transform, sensor_frame, lidar_frame));
 
     ros::spin();
+    // while ( ros::ok() ) { 
+    //   ros::spinOnce();
+    // }
 
     return EXIT_SUCCESS;
 }
