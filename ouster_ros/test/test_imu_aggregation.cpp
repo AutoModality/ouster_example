@@ -15,19 +15,18 @@
 
 TEST(ImuLidar,CanProcess)
 {
-    ros::NodeHandle nh("~");    
+    ros::Time::init();
+    // ros::NodeHandle nh("~");    
     boost::circular_buffer<sensor_msgs::Imu> imu_buf(1000);
     boost::circular_buffer<std::shared_ptr<ouster_ros::PacketMsg>> cb(3);
     #include "bufdat.h"
     ouster_ros::PacketMsg lidarpkt;
-    std::vector<ouster_ros::PacketMsg> results;
+    std::vector<sensor_msgs::PointCloud2> results;
     sensor_msgs::Imu imumsg;
     geometry_msgs::Quaternion q;
     uint32_t W = 512, H = 64;
     ouster_ros::OS1::CloudOS1 cloud{W, H};
     sensor_msgs::PointCloud2 msg{};
-    // auto imu_frame = "/os1_imu";
-    // auto lidar_frame = "/os1_sensor";
 
     auto it = cloud.begin();
     const std::vector<double> beam_altitude_angles = {
@@ -60,9 +59,8 @@ TEST(ImuLidar,CanProcess)
     auto batch_and_publish = ouster::OS1::am_batch_to_iter<ouster_ros::OS1::CloudOS1::iterator>(
         xyz_lut, W, H, {}, &ouster_ros::OS1::PointOS1::make,
         [&](uint64_t scan_ts) mutable {
-            // scan_ts *= 2;
-            // results.push_back(msg);
-            // lidar_pub.publish(msg);
+            msg = ouster_ros::OS1::cloud_to_cloud_msg(cloud, std::chrono::nanoseconds{scan_ts}, "lidar_frame");
+            results.push_back(msg);
         });
 
 
@@ -100,7 +98,7 @@ TEST(ImuLidar,CanProcess)
     }
 
     lidar_handler( lidarpkt );
-
+    ASSERT_EQ(results.size(), 1);
 }
 
 

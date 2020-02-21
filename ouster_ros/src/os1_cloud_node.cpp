@@ -178,24 +178,10 @@ int main(int argc, char** argv) {
             lidar_pub.publish(msg);
         });
 
-    auto lidar_handler = [&](const PacketMsg& pm) mutable {
-        static int val = 0;
-        cb.push_back(std::make_shared<PacketMsg>(pm));
 
-        // while(val == 0 ){
-
-        //   sleep(1);
-        // }
-        std::shared_ptr<PacketMsg> tmppm;
-
-        while ( cb.size() > 0 ) {
-            tmppm = cb.front();
-            batch_and_publish(tmppm->buf.data(), it);
-            ROS_DEBUG_THROTTLE(1,"LIDAR !");                           
-            cb.pop_front();
-        }
-            
-        };
+    // lidar_handler definition
+    // Needed for unit testing
+    #include <ouster_ros/lidar_handler.hpp>
 
     auto external_imu_cb = [&]( const sensor_msgs::Imu::ConstPtr &imu_msg) {
                                auto tmp = std::sqrt( imu_msg->orientation.x*imu_msg->orientation.x +
