@@ -25,7 +25,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_ros
   tf2_geometry_msgs
   latency_testing
-  am_imu_utils
+  # am_imu_utils
 )
 
 add_message_files(FILES PacketMsg.msg)
@@ -54,7 +54,7 @@ if(PROFILE)
 endif(PROFILE)
 
 
-include_directories(${catkin_INCLUDE_DIRS} ../ouster_client/include )
+include_directories(${catkin_INCLUDE_DIRS} ../ouster_client/include include )
 
 add_library(ouster_ros STATIC src/os1_ros.cpp)
 target_link_libraries(ouster_ros ${catkin_LIBRARIES})
@@ -103,13 +103,20 @@ install(DIRECTORY scripts DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION} USE_SO
 ## Testing ##
 #############
 if (CATKIN_ENABLE_TESTING )
+
   # Simple unit tests with catkin_add_gtest
-  if ( ${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64" ) 
-    catkin_add_gtest(testpcl ./test/test_convert.cpp WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test )
-    # target_compile_definitions(testpcl PUBLIC TEST)
-    target_link_libraries(testpcl ouster_ros )
-    install(DIRECTORY test DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
-  endif ( ${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64") 
+  catkin_add_gtest(test_imu_aggregation test/test_imu_aggregation.cpp )
+  set_property(SOURCE test/test_imu_aggregation.cpp APPEND PROPERTY OBJECT_DEPENDS ${PROJECT_SOURCE_DIR}/include/ouster_ros/lidar_handler.hpp)
+  target_link_libraries(test_imu_aggregation ouster_ros ${catkin_LIBRARIES} )
+
+
+  # if ( ${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64" ) 
+  #   catkin_add_gtest(testpcl ./test/test_convert.cpp WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test )
+  #   # target_compile_definitions(testpcl PUBLIC TEST)
+  #   target_link_libraries(testpcl ouster_ros )
+  #   install(DIRECTORY test DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+  # endif ( ${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64") 
+
 
   if ( CATKIN_RUNNING_TESTS )
     

@@ -47,14 +47,14 @@
   <env name="GMON_OUT_PREFIX" value="os1_cloud_node_gmon_name" />
   <node pkg="ouster_ros" type="os1_cloud_node" name="os1_cloud_node" output="screen"
         >
-        <!-- launch-prefix="/home/jdamon/Scripts/ros_tmux_other_window" -->
-    <param name="~/raw" value="$(arg raw)"/>
-    <param name="~/organized" value="true"/>
-    <param name="~/self_test" value="$(arg self_test)" />
+    <!-- launch-prefix="/home/jdamon/Scripts/ros_tmux_other_window" -->
     <remap from="~/os1_config" to="/os1_node/os1_config"/>
     <remap from="~/lidar_packets" to="/os1_node/lidar_packets"/>
     <remap from="~/imu_packets" to="/os1_node/imu_packets"/>
     <remap from="~/pcl_channel" to="/os1_node/pcl_channel"/>
+    <param name="~/raw" value="$(arg raw)"/>
+    <param name="~/organized" value="true"/>
+    <param name="~/self_test" value="$(arg self_test)" />
   </node>
 
   <node if="$(arg ros_bag)" pkg="ouster_ros" name="ROSBAG" type="rosbag.sh" args="$(arg replaydelay) $(find ouster_ros)/data/$(arg organized)_$(arg resolution)x$(arg hz).bag" />

@@ -24,10 +24,10 @@
         auto iit = std::find_if(imu_buf.begin(),
                                 imu_buf.end(),
                                 [&](const sensor_msgs::Imu &imu) {
-                                  return ( abs(imu.header.stamp.toNSec() - first_ts ) < 10000 );
+                                  return ( abs(imu.header.stamp.toNSec() - first_ts ) < 100000000000 );
                                 });
 
-        while ( cb.size() > 0 ) {// && first_ts && iit != imu_buf.end()  ) {
+        while ( cb.size() > 0 && first_ts && iit != imu_buf.end() ) {
             tmppm = cb.front();
             batch_and_publish(tmppm->buf.data(), it);
             ROS_DEBUG_THROTTLE(1,"LIDAR !");                           
