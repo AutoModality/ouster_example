@@ -13,22 +13,8 @@
 #include <ouster_ros/PacketMsg.h>
 #include <ouster_ros/os1_ros.h>
 
-TEST(ImuLidar,CanProcess)
+struct ImuLidar : public ::testing::Test
 {
-    ros::Time::init();
-    // ros::NodeHandle nh("~");    
-    boost::circular_buffer<sensor_msgs::Imu> imu_buf(1000);
-    boost::circular_buffer<std::shared_ptr<ouster_ros::PacketMsg>> cb(3);
-    #include "bufdat.h"
-    ouster_ros::PacketMsg lidarpkt;
-    std::vector<sensor_msgs::PointCloud2> results;
-    sensor_msgs::Imu imumsg;
-    geometry_msgs::Quaternion q;
-    uint32_t W = 512, H = 64;
-    ouster_ros::OS1::CloudOS1 cloud{W, H};
-    sensor_msgs::PointCloud2 msg{};
-
-    auto it = cloud.begin();
     const std::vector<double> beam_altitude_angles = {
                                                       16.611,  16.084,  15.557,  15.029,  14.502,  13.975,  13.447,  12.920,
                                                       12.393,  11.865,  11.338,  10.811,  10.283,  9.756,   9.229,   8.701,
@@ -52,20 +38,50 @@ TEST(ImuLidar,CanProcess)
     };
 
 
+      
+      std::vector<double> xyz_lut;
+      boost::circular_buffer<sensor_msgs::Imu> imu_buf;
+      boost::circular_buffer<std::shared_ptr<ouster_ros::PacketMsg>> cb;
+      std::vector<sensor_msgs::PointCloud2> results;
 
-    auto xyz_lut = ouster::OS1::make_xyz_lut(W, H, beam_azimuth_angles,beam_altitude_angles);
+      sensor_msgs::PointCloud2 msg{};
+      
+      ImuLidar() : imu_buf(1000) , cb(10)  {}
+      
+      virtual void SetUp(uint32_t W,uint32_t H) { 
+          xyz_lut = ouster::OS1::make_xyz_lut(W, H, beam_azimuth_angles,beam_altitude_angles);
+          imu_buf.clear();
+          results.clear();
+      }
 
+      virtual void TearDown() {
+      }
+};
+
+
+TEST_F(ImuLidar,CanProcess)
+{
+    uint32_t W = 512, H = 64;
+    SetUp(W,H);
+    ros::Time::init();
+    // boost::circular_buffer<sensor_msgs::Imu> imu_buf(1000);
+    // boost::circular_buffer<std::shared_ptr<ouster_ros::PacketMsg>> cb(3);
+#include "bufdat.h"
+    ouster_ros::PacketMsg lidarpkt;
+    ouster_ros::OS1::CloudOS1 cloud{W,H};
+    sensor_msgs::Imu imumsg;
+    geometry_msgs::Quaternion q;
+    auto it = cloud.begin();
 
     auto batch_and_publish = ouster::OS1::am_batch_to_iter<ouster_ros::OS1::CloudOS1::iterator>(
-        xyz_lut, W, H, {}, &ouster_ros::OS1::PointOS1::make,
-        [&](uint64_t scan_ts) mutable {
-            msg = ouster_ros::OS1::cloud_to_cloud_msg(cloud, std::chrono::nanoseconds{scan_ts}, "lidar_frame");
-            results.push_back(msg);
-        });
+                               xyz_lut, W, H, {}, &ouster_ros::OS1::PointOS1::make,
+                               [&](uint64_t scan_ts) mutable {
+                                   msg = ouster_ros::OS1::cloud_to_cloud_msg(cloud, std::chrono::nanoseconds{scan_ts}, "lidar_frame");
+                                   results.push_back(msg);
+                               });
 
-
-    #include <ouster_ros/lidar_handler.hpp>
-    #define LIDAR_HANDLER
+#include <ouster_ros/lidar_handler.hpp>
+#define LIDAR_HANDLER
     q.x = 0;
     q.y = 0;
     q.z = 1;
@@ -99,8 +115,40 @@ TEST(ImuLidar,CanProcess)
 
     lidar_handler( lidarpkt );
     ASSERT_EQ(results.size(), 1);
+    // for ( imu_buf.begin(),imu_buf.end() ) {
+    // }
+
 }
 
+TEST_F(ImuLidar,ImuSearch)
+{
+    uint32_t W = 512, H = 64;
+    SetUp(W,H);
+    ros::Time::init();
+    sensor_msgs::Imu imumsg;
+
+#undef IMU_BUF_FIND
+#include <ouster_ros/lidar_handler.hpp>
+
+    ros::Time reftime = ros::Time::now();
+    ros::Time start(reftime.toSec(),10000);
+    int count;
+    for ( count = 0; count < 5 ; count ++ ) {
+        imumsg.header.seq = count;
+        ros::Time ntime(start.sec,start.nsec + 10000*count);
+        imumsg.header.stamp = ntime;
+        imu_buf.push_back(imumsg);
+    }
+
+    uint64_t rtime = ros::Time(start.sec,start.nsec+10000).toNSec();
+    auto tmp = imu_buf_find(10000,rtime);
+    auto myit = std::find_if(imu_buf.begin(), 
+                             imu_buf.end(), 
+                             tmp
+                             );
+    ASSERT_TRUE( myit != imu_buf.end() );
+
+} 
 
 
 #include <ros/console.h>
