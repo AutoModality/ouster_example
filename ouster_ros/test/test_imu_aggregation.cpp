@@ -1,5 +1,8 @@
 #include <iostream>
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
+#include "gmock/gmock-matchers.h"
+
 #include <ros/ros.h>
 #include <boost/circular_buffer.hpp>
 #include <sensor_msgs/Imu.h>
@@ -12,6 +15,7 @@
 #include <ouster_ros/OS1ConfigSrv.h>
 #include <ouster_ros/PacketMsg.h>
 #include <ouster_ros/os1_ros.h>
+#include <ouster_ros/lidar_process_queue.h>
 
 struct ImuLidar : public ::testing::Test
 {
@@ -49,7 +53,8 @@ struct ImuLidar : public ::testing::Test
       ImuLidar() : imu_buf(1000) , cb(10)  {}
       
       virtual void SetUp(uint32_t W,uint32_t H) { 
-          xyz_lut = ouster::OS1::make_xyz_lut(W, H, beam_azimuth_angles,beam_altitude_angles);
+        ros::Time::init();
+        xyz_lut = ouster::OS1::make_xyz_lut(W, H, beam_azimuth_angles,beam_altitude_angles);
           imu_buf.clear();
           results.clear();
       }
@@ -112,9 +117,41 @@ TEST_F(ImuLidar,CanProcess)
     for ( size_t i = 0 ; i < sizeof(buf); i ++ ) {
         lidarpkt.buf.push_back( buf[i] );
     }
+    cb.push_back(std::make_shared<ouster_ros::PacketMsg>(lidarpkt));
 
-    lidar_handler( lidarpkt );
-    ASSERT_EQ(results.size(), 1);
+    auto times = GetTimes( *cb.front() );
+
+    for ( size_t i = 0; i < times.size() ; i ++) {
+      ASSERT_EQ( times[i] , ros::Time(start.sec,start.nsec).toNSec() ) << "Value for index " << i << "\n";
+    }
+    
+    auto retval  = CanProcess( cb, imu_buf, 100000 );
+
+    ASSERT_EQ( retval, LidarStates::PROCESS );
+    
+    for ( size_t i = 0; i < times.size() ; i ++) {
+      times[i] = i;
+    }
+    SetTimes( *cb.front(), times );
+
+    auto ntimes = GetTimes( *cb.front() );
+
+    for ( size_t i = 0; i < ntimes.size(); i ++ ) {
+      ASSERT_EQ( ntimes[i], times[i] );
+    }
+    
+    SetTimes( *cb.front(), std::vector<uint64_t>({1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}) );
+    ntimes = GetTimes( *cb.front() );
+
+    for ( size_t i = 0; i < ntimes.size(); i ++ ) {
+      ASSERT_EQ( ntimes[i], 1 );
+    }
+
+    
+    
+    // ASSERT_EQ( retval, LidarStates::PROCESS );
+    // lidar_handler( lidarpkt );
+    // ASSERT_EQ(results.size(), 1);
     // for ( imu_buf.begin(),imu_buf.end() ) {
     // }
 
@@ -148,7 +185,51 @@ TEST_F(ImuLidar,ImuSearch)
                              );
     ASSERT_TRUE( myit != imu_buf.end() );
 
-} 
+}
+
+TEST_F(ImuLidar, CheckCanProcess)
+{
+    sensor_msgs::Imu imumsg;
+    ros::Time::init();
+    ros::Time reftime = ros::Time::now();
+    ros::Time start(reftime.toSec(),10000);
+    ouster_ros::PacketMsg lidarpkt;
+    int count;
+
+    for ( count = 0; count < 5 ; count ++ ) {
+        imumsg.header.seq = count;
+        ros::Time ntime(start.sec,start.nsec + 10000*count);
+        imumsg.header.stamp = ntime;
+        imu_buf.push_back(imumsg);
+    }
+#include "bufdat.h"
+    for ( size_t i = 0 ; i < sizeof(buf); i ++ ) {
+        lidarpkt.buf.push_back( buf[i] );
+    }
+    
+    uint64_t tmpval = ros::Time(start.sec,start.nsec + 3*10000).toNSec();
+    SetTimes( lidarpkt, std::vector<uint64_t>{tmpval,tmpval,tmpval,tmpval,tmpval,tmpval,tmpval,tmpval,tmpval,tmpval,tmpval,tmpval,tmpval,tmpval,tmpval,tmpval});
+    
+    cb.push_back(std::make_shared<ouster_ros::PacketMsg>(lidarpkt));
+
+
+    auto retval  = CanProcess( cb, imu_buf, 100000 );
+    ASSERT_EQ( retval, LidarStates::PROCESS );
+
+    cb.pop_front();
+    tmpval = 1000;
+    SetTimes( lidarpkt, std::vector<uint64_t>{tmpval,tmpval,tmpval,tmpval,tmpval,tmpval,tmpval,tmpval,tmpval,tmpval,tmpval,tmpval,tmpval,tmpval,tmpval,tmpval});
+    retval = CanProcess( cb, imu_buf, 100000 );
+    // Should be QUEUE since we have no values in the queue
+    ASSERT_EQ( retval, LidarStates::QUEUE );
+
+    cb.push_back(std::make_shared<ouster_ros::PacketMsg>(lidarpkt));
+    retval = CanProcess( cb, imu_buf, 100000 );
+    ASSERT_EQ( retval, LidarStates::SHITCAN );
+    
+    
+    
+}
 
 
 #include <ros/console.h>

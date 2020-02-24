@@ -16,12 +16,13 @@
 #include <fstream>
 #include <sstream>
 
-#include "ouster/os1_packet.h"
-#include "ouster/os1_util.h"
-#include "ouster/os1_am.h"
-#include "ouster_ros/OS1ConfigSrv.h"
-#include "ouster_ros/PacketMsg.h"
-#include "ouster_ros/os1_ros.h"
+#include <ouster/os1_packet.h>
+#include <ouster/os1_util.h>
+#include <ouster/os1_am.h>
+#include <ouster_ros/OS1ConfigSrv.h>
+#include <ouster_ros/PacketMsg.h>
+#include <ouster_ros/os1_ros.h>
+#include <ouster_ros/lidar_process_queue.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/LinearMath/Transform.h>
@@ -30,6 +31,8 @@
 #include <tf2/convert.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <latency_testing/DelayStatistics.h>
+
+
 //#include <latency_testing/DelayStatistics.h>
 //#include <latency_testing/Concerns.h>
 
@@ -106,6 +109,8 @@ void debug_configuration(std::vector<double> &xyz_lut,
     
 }
 
+
+
 int main(int argc, char** argv) {
     ros::init(argc, argv, "os1_cloud_node");
     ros::NodeHandle nh("~");
@@ -124,7 +129,7 @@ int main(int argc, char** argv) {
     auto raw              = nh.param("raw"      , bool{false} ); // Use the raw point cloud
     auto min_distance     = nh.param("min_distance", double{0.5} );
     
-    boost::circular_buffer<std::shared_ptr<PacketMsg>> cb(3);
+    boost::circular_buffer<std::shared_ptr<PacketMsg>> cb(300);
 // const PacketMsg& pm
 
     std::atomic_uint  num_imus{0};
@@ -168,7 +173,7 @@ int main(int argc, char** argv) {
     auto it = cloud.begin();
     sensor_msgs::PointCloud2 msg{};
 
-    boost::circular_buffer<sensor_msgs::Imu> imu_buf(1000);
+    boost::circular_buffer<sensor_msgs::Imu> imu_buf(2000);
 
     auto batch_and_publish = OS1::am_batch_to_iter<CloudOS1::iterator>(
         xyz_lut, W, H, {}, &PointOS1::make,

@@ -64,7 +64,7 @@ add_executable(os1_node src/os1_node.cpp)
 target_link_libraries(os1_node ouster_ros ${catkin_LIBRARIES})
 add_dependencies(os1_node ${PROJECT_NAME}_gencpp)
 
-add_executable(os1_cloud_node src/os1_cloud_node.cpp)
+add_executable(os1_cloud_node src/os1_cloud_node.cpp src/lidar_process_queue.cpp)
 target_link_libraries(os1_cloud_node ouster_ros ${catkin_LIBRARIES})
 add_dependencies(os1_cloud_node ${PROJECT_NAME}_gencpp)
 
@@ -105,7 +105,7 @@ install(DIRECTORY scripts DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION} USE_SO
 if (CATKIN_ENABLE_TESTING )
 
   # Simple unit tests with catkin_add_gtest
-  catkin_add_gtest(test_imu_aggregation test/test_imu_aggregation.cpp )
+  catkin_add_gtest(test_imu_aggregation test/test_imu_aggregation.cpp src/lidar_process_queue.cpp )
   set_property(SOURCE test/test_imu_aggregation.cpp APPEND PROPERTY OBJECT_DEPENDS ${PROJECT_SOURCE_DIR}/include/ouster_ros/lidar_handler.hpp)
   target_link_libraries(test_imu_aggregation ouster_ros ${catkin_LIBRARIES} )
 
