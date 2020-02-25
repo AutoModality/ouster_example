@@ -19,4 +19,12 @@ std::vector<uint64_t> GetTimes( const ouster_ros::PacketMsg  &pkt );
 
 void SetTimes( ouster_ros::PacketMsg &pkt , const std::vector<uint64_t> &times );
 
+void SetMeasurementIndicies( ouster_ros::PacketMsg &pkt, const std::vector<uint16_t> &indicies );
+
+std::vector<uint16_t> GetMeasurementIndicies( const ouster_ros::PacketMsg &pkt );
+
+void SetFrameIndicies( ouster_ros::PacketMsg &pkt, const std::vector<uint16_t> &index );
+
+std::vector<uint16_t> GetFrameIndicies( ouster_ros::PacketMsg &pkt );
+
 #endif

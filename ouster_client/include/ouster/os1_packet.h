@@ -50,12 +50,20 @@ inline uint16_t col_measurement_id(const uint8_t* col_buf) {
     return res;
 }
 
+inline void col_set_measurement_id(uint8_t* col_buf, uint16_t mid) {
+    memcpy(col_buf+8,&mid, sizeof(uint16_t));
+}
+
 inline uint16_t col_frame_id(const uint8_t* col_buf) {
     uint16_t res;
     memcpy(&res, col_buf + 10, sizeof(uint16_t));
     return res;
 }
 
+inline void col_set_frame_id(uint8_t* col_buf, uint16_t fid) {
+    memcpy(col_buf+10,&fid, sizeof(uint16_t));
+}
+  
 inline uint32_t col_valid(const uint8_t* col_buf) {
     uint32_t res;
     memcpy(&res, col_buf + (16 + pixels_per_column * pixel_bytes),

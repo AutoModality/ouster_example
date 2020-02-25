@@ -50,7 +50,7 @@ struct ImuLidar : public ::testing::Test
 
       sensor_msgs::PointCloud2 msg{};
       
-      ImuLidar() : imu_buf(1000) , cb(10)  {}
+      ImuLidar() : imu_buf(1000) , cb(1000)  {}
       
       virtual void SetUp(uint32_t W,uint32_t H) { 
         ros::Time::init();
@@ -60,6 +60,7 @@ struct ImuLidar : public ::testing::Test
       }
 
       virtual void TearDown() {
+          cb.clear();
       }
 };
 
@@ -229,6 +230,196 @@ TEST_F(ImuLidar, CheckCanProcess)
     
     
     
+}
+
+TEST_F(ImuLidar, CheckCanSCAN)
+{
+    sensor_msgs::Imu imumsg;
+    ros::Time::init();
+    ros::Time reftime = ros::Time::now();
+    ros::Time start(reftime.toSec(),10000);
+    ouster_ros::PacketMsg lidarpkt;
+    int count;
+
+    for ( count = 2; count < 7 ; count ++ ) {
+        imumsg.header.seq = count;
+        ros::Time ntime(start.sec,start.nsec + 10000*count);
+        imumsg.header.stamp = ntime;
+        imu_buf.push_back(imumsg);
+    }
+    ASSERT_EQ( imu_buf.size() , 5 );
+    
+#include "bufdat.h"
+    for ( size_t i = 0 ; i < sizeof(buf); i ++ ) {
+        lidarpkt.buf.push_back( buf[i] );
+    }
+    
+    uint64_t tmpval = ros::Time(start.sec,start.nsec + 0).toNSec();
+    SetTimes( lidarpkt, std::vector<uint64_t>{tmpval,tmpval,tmpval,tmpval,
+                                              tmpval+4,tmpval+4,tmpval+4,tmpval+4,
+                                              tmpval+8,tmpval+8,tmpval+8,tmpval+8,
+                                              tmpval+12,tmpval+12,tmpval+12,tmpval+12});
+
+
+    cb.push_back(std::make_shared<ouster_ros::PacketMsg>(lidarpkt));
+
+    auto retval  = CanProcess( cb, imu_buf, 1000 );
+    ASSERT_EQ(retval, LidarStates::SHITCAN);
+
+}
+
+TEST_F(ImuLidar, CheckCanSetIndex)
+{
+    sensor_msgs::Imu imumsg;
+    ros::Time::init();
+    ros::Time reftime = ros::Time::now();
+    ros::Time start(reftime.toSec(),10000);
+    ouster_ros::PacketMsg lidarpkt;
+    int count;
+
+    for ( count = 0; count < 7 ; count ++ ) {
+        imumsg.header.seq = count;
+        ros::Time ntime(start.sec,start.nsec + 10000*count);
+        imumsg.header.stamp = ntime;
+        imu_buf.push_back(imumsg);
+    }
+    ASSERT_EQ( imu_buf.size() , 7 );
+    
+#include "bufdat.h"
+    for ( size_t i = 0 ; i < sizeof(buf); i ++ ) {
+        lidarpkt.buf.push_back( buf[i] );
+    }
+    
+    uint64_t tmpval = ros::Time(start.sec,start.nsec + 0).toNSec();
+    SetTimes( lidarpkt, std::vector<uint64_t>{tmpval,tmpval,tmpval,tmpval,
+                                              tmpval+4,tmpval+4,tmpval+4,tmpval+4,
+                                              tmpval+8,tmpval+8,tmpval+8,tmpval+8,
+                                              tmpval+12,tmpval+12,tmpval+12,tmpval+12});
+
+    
+    SetMeasurementIndicies( lidarpkt, std::vector<uint16_t>{20} );
+    cb.push_back(std::make_shared<ouster_ros::PacketMsg>(lidarpkt));
+
+    auto retval  = CanProcess( cb, imu_buf, 1000 );
+    ASSERT_EQ(retval, LidarStates::PROCESS);
+
+    auto a = GetMeasurementIndicies(*(cb.back()));
+    ASSERT_EQ( 20,a[0] );
+    
+    std::vector<uint16_t> expected{21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36};
+    SetMeasurementIndicies( lidarpkt, expected );
+    cb.push_back(std::make_shared<ouster_ros::PacketMsg>(lidarpkt));
+    a = GetMeasurementIndicies(*(cb.back()));
+    for ( int i = 0; i < expected.size() ; i ++ ) {
+      ASSERT_EQ( expected[i], a[i] );
+    }
+
+    SetFrameIndicies( lidarpkt, expected );
+    cb.push_back(std::make_shared<ouster_ros::PacketMsg>(lidarpkt));
+    auto b = GetFrameIndicies(*(cb.back()));
+    ASSERT_EQ( expected[0], b[0] );
+
+    ASSERT_EQ( cb.size(), 3 );
+    
+}
+
+
+
+// 64 IMU packets 
+// Make 64 Lidar packets ( 2 scans at 512 ) 
+// We shoudl reject the packets from 
+// the first packet because the time readings won't be
+// correct values
+TEST_F(ImuLidar, RemoveScanPackets )
+{
+    sensor_msgs::Imu imumsg;
+    ros::Time::init();
+    ros::Time reftime = ros::Time::now();
+    ros::Time start(reftime.toSec(),10000);
+    ouster_ros::PacketMsg lidarpkt;
+    int count;
+    uint16_t W = 512,H = 16;
+    ouster_ros::OS1::CloudOS1 cloud{W,H};
+    geometry_msgs::Quaternion q;
+    std::vector<sensor_msgs::PointCloud2> results;
+    auto it = cloud.begin();
+    SetUp(W,H);
+
+    auto batch_and_publish = ouster::OS1::am_batch_to_iter<ouster_ros::OS1::CloudOS1::iterator>(
+                               xyz_lut, W, H, {}, &ouster_ros::OS1::PointOS1::make,
+                               [&](uint64_t scan_ts) mutable {
+                                   msg = ouster_ros::OS1::cloud_to_cloud_msg(cloud, std::chrono::nanoseconds{scan_ts}, "lidar_frame");
+                                   results.push_back(msg);
+                               });
+
+    
+    for ( count = 1; count <= 64 ; count ++ ) {
+        imumsg.header.seq = count;
+        ros::Time ntime(start.sec,start.nsec + 10000*count);
+        imumsg.header.stamp = ntime;
+        imu_buf.push_back(imumsg);
+    }
+    cb.clear();
+
+#undef IMU_BUF_FIND
+#undef LIDAR_HANDLER
+#include <ouster_ros/lidar_handler.hpp>
+
+#include "bufdat.h"
+    uint64_t tmpval = ros::Time(start.sec,start.nsec + 0*10000).toNSec();    
+    for ( uint16_t pktnum = 0; pktnum < 2; pktnum ++ ) { // Two scans
+        for ( int count = 0; count < 32; count ++ ) { // 32 packets 
+            for ( size_t i = 0 ; i < sizeof(buf); i ++ ) {
+                lidarpkt.buf.push_back( buf[i] );
+            }
+            std::vector<uint16_t> ids{};
+            SetTimes( lidarpkt, std::vector<uint64_t>{tmpval,tmpval,tmpval,tmpval,tmpval,tmpval,tmpval,tmpval,tmpval,tmpval,tmpval,tmpval,tmpval,tmpval,tmpval,tmpval});
+            SetFrameIndicies( lidarpkt, std::vector<uint16_t>{pktnum,pktnum,pktnum,pktnum,pktnum,pktnum,pktnum,pktnum,pktnum,pktnum,pktnum,pktnum,pktnum,pktnum,pktnum,pktnum});
+            ids.clear();
+            for ( int i = 0; i < 16 ; i ++ ) {
+                ids.push_back( i + count * 16 );
+            }
+            SetMeasurementIndicies( lidarpkt, ids );
+            ids.clear();
+
+            lidar_handler( lidarpkt );
+        }
+    }
+    ASSERT_EQ(cb.size(),64);
+    
+}
+
+
+// Make sure that position doesn't change if the IMU buf is long enough 
+TEST_F(ImuLidar,CbufPosition)
+{
+    sensor_msgs::Imu imumsg;
+    ros::Time::init();
+    ros::Time reftime = ros::Time::now();
+    ros::Time start(reftime.toSec(),10000);
+    int count;
+    imu_buf.clear();
+    for ( count = 0; count < 600 ; count ++ ) {
+        imumsg.header.seq = count;
+        ros::Time ntime(start.sec,start.nsec + 10000*count);
+        imumsg.header.stamp = ntime;
+        imu_buf.push_back(imumsg);
+    }
+    auto pos = std::find_if( imu_buf.begin(),imu_buf.end(),[&](const sensor_msgs::Imu &imumsg ) {
+                                                               return imumsg.header.stamp >= ros::Time(start.sec,start.nsec + 10000*500 );
+                                                           });
+    ASSERT_NE(pos,imu_buf.end());
+    ASSERT_NE(pos,imu_buf.begin());
+    int num_remove = std::distance(imu_buf.begin(),pos );
+    ASSERT_EQ(500,num_remove);
+    for ( int i = 0; i < num_remove; i ++ ) {
+        imu_buf.pop_front();
+        imumsg.header.stamp = ros::Time(start.sec, start.nsec + 10000*(++count));
+        imu_buf.push_back( imumsg );
+    };
+    ASSERT_EQ(600,imu_buf.size());
+    ASSERT_EQ(ros::Time(start.sec, start.nsec+ 10000*500 ),imu_buf.front().header.stamp );
+
 }
 
 

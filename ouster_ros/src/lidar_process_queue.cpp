@@ -60,3 +60,49 @@ void SetTimes( ouster_ros::PacketMsg &pkt , const std::vector<uint64_t> &times )
         *((uint64_t *)col_buf) = times[i];
     }
 }
+
+void SetMeasurementIndicies( ouster_ros::PacketMsg &pkt, const std::vector<uint16_t> &indicies )
+{
+    uint8_t *buf = pkt.buf.data();
+    for (size_t i = 0; i < ouster::OS1::columns_per_buffer && i < indicies.size() ; i ++ ) {
+        const uint8_t *packet_buf = buf;
+        uint8_t* col_buf = (uint8_t *)ouster::OS1::nth_col(i, packet_buf);
+        ouster::OS1::col_set_measurement_id( col_buf, indicies[i] );
+    }
+}
+
+std::vector<uint16_t> GetMeasurementIndicies( const ouster_ros::PacketMsg &pkt )
+{
+    const uint8_t *buf = pkt.buf.data();
+    std::vector<uint16_t> retval;
+    for (size_t i = 0; i < ouster::OS1::columns_per_buffer ; i ++ ) {
+        const uint8_t *packet_buf = buf;
+        const uint8_t* col_buf = ouster::OS1::nth_col(i, packet_buf);
+        retval.push_back(ouster::OS1::col_measurement_id( col_buf ));
+    }
+    return retval;
+}
+
+void SetFrameIndicies( ouster_ros::PacketMsg &pkt, const std::vector<uint16_t> &indicies )
+{
+    uint8_t *buf = pkt.buf.data();
+    for (size_t i = 0; i < ouster::OS1::columns_per_buffer && i < indicies.size() ; i ++ ) {
+        const uint8_t *packet_buf = buf;
+        uint8_t* col_buf = (uint8_t *)ouster::OS1::nth_col(i, packet_buf);
+        ouster::OS1::col_set_frame_id( col_buf, indicies[i] );
+    }
+}
+
+std::vector<uint16_t> GetFrameIndicies( ouster_ros::PacketMsg &pkt )
+{
+    uint8_t *buf = pkt.buf.data();
+    std::vector<uint16_t> retval;
+    for (size_t i = 0; i < ouster::OS1::columns_per_buffer ; i ++ ) {
+        const uint8_t *packet_buf = buf;
+        const uint8_t* col_buf = ouster::OS1::nth_col(i, packet_buf);
+        retval.push_back(ouster::OS1::col_frame_id( col_buf ));
+    }
+
+    return retval;
+}
+

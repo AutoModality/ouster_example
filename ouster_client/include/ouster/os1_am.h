@@ -38,18 +38,16 @@ namespace OS1 {
  * which data is added for every point in the scan.
  */
 template <typename iterator_type, typename F, typename C>
-std::function<void(const uint8_t*, iterator_type it)> am_batch_to_iter(
+std::function<void(const uint8_t*, iterator_type it ,bool)> am_batch_to_iter(
     const std::vector<double>& xyz_lut, int W, int H,
     const typename iterator_type::value_type& empty, C&& c, F&& f) {
     int next_m_id{W};
     int32_t cur_f_id{-1};
-
     int64_t scan_ts{-1L};
+    bool local_s_can{false};
 
-    return [=](const uint8_t* packet_buf, iterator_type it) mutable {
-
-
-
+    return [=](const uint8_t* packet_buf, iterator_type it, bool s_can ) mutable {
+             local_s_can = s_can;
         for (int icol = 0; icol < OS1::columns_per_buffer; icol++) {
             const uint8_t* col_buf = OS1::nth_col(icol, packet_buf);
             const uint16_t m_id = OS1::col_measurement_id(col_buf);
@@ -57,15 +55,20 @@ std::function<void(const uint8_t*, iterator_type it)> am_batch_to_iter(
             const uint64_t ts = OS1::col_timestamp(col_buf);
             const bool valid = OS1::col_valid(col_buf) == 0xffffffff;
 
+
             // drop invalid / out-of-bounds data in case of misconfiguration
             if (!valid || m_id >= W || f_id + 1 == cur_f_id) continue;
 
             if (f_id != cur_f_id) {
                 // if not initializing with first packet
-                if (scan_ts != -1) {
+                if (scan_ts != -1 ) {
                     // zero out remaining missing columns
                     std::fill(it + (H * next_m_id), it + (H * W), empty);
-                    f(scan_ts);
+                    if ( !local_s_can ) {
+                      f(scan_ts);
+                    } else {
+                      local_s_can = false;
+                    }
                 }
 
                 // start new frame

@@ -183,7 +183,7 @@ int main(int argc, char** argv) {
             lidar_pub.publish(msg);
         });
 
-
+    
     // lidar_handler definition
     // Needed for unit testing
     #include <ouster_ros/lidar_handler.hpp>
