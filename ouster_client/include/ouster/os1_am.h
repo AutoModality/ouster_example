@@ -135,12 +135,7 @@ std::function<void(const uint8_t*, iterator_type it ,boost::circular_buffer<sens
                                   OS1::px_signal_photons(px_buf), ts - scan_ts,
                                   OS1::px_reflectivity(px_buf), ipx,
                                   OS1::px_noise_photons(px_buf), r);
-                // it[idx + ipx] = c(r * 0.001f * xyz_lut[ind + 0],
-                //                   r * 0.001f * xyz_lut[ind + 1],
-                //                   r * 0.001f * xyz_lut[ind + 2],
-                //                   OS1::px_signal_photons(px_buf), ts - scan_ts,
-                //                   OS1::px_reflectivity(px_buf), ipx,
-                //                   OS1::px_noise_photons(px_buf), r);
+
               }
             }
         }
