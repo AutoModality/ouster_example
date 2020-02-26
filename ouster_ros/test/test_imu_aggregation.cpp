@@ -195,12 +195,12 @@ TEST_F(ImuLidar,ImuSearch)
     }
 
     uint64_t rtime = ros::Time(start.sec,start.nsec+10000).toNSec();
-    auto tmp = imu_buf_find(10000,rtime);
-    auto myit = std::find_if(imu_buf.begin(), 
-                             imu_buf.end(), 
-                             tmp
-                             );
-    ASSERT_TRUE( myit != imu_buf.end() );
+    // auto tmp = imu_buf_find(10000,rtime);
+    // auto myit = std::find_if(imu_buf.begin(), 
+    //                          imu_buf.end(), 
+    //                          tmp
+    //                          );
+    // ASSERT_TRUE( myit != imu_buf.end() );
 
 }
 

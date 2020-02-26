@@ -75,6 +75,7 @@ void filter_pointcloud(CloudOS1 &incloud, CloudOS1 &out_pc)
     }
     // return out_pc;
 }
+#define UNUSED(x) (void)(x)
 
 
 void debug_configuration(std::vector<double> &xyz_lut, 
@@ -90,6 +91,8 @@ void debug_configuration(std::vector<double> &xyz_lut,
       myfile << "- " << std::setprecision(4) << *it << "\n";
     }
     myfile.close();
+#else
+    UNUSED(xyz_lut);
 #endif
     std::ostringstream ss,ss2;
     ss << "BEAM_AZIMUTH_ANGLES = [ ";
@@ -98,7 +101,7 @@ void debug_configuration(std::vector<double> &xyz_lut,
     }
     auto it2 = beam_azimuth_angles.end() - 1;
     ss << *it2 << " ]";
-    ROS_DEBUG(ss.str().c_str());
+    ROS_DEBUG_STREAM(ss.str());
     ss2.clear();
     ss2 << "BEAM_ALTITUDE_ANGLES = [ ";
     for ( auto it=beam_altitude_angles.begin() ; it + 1< beam_altitude_angles.end(); it++ ) {
@@ -106,7 +109,7 @@ void debug_configuration(std::vector<double> &xyz_lut,
     }
     it2 = beam_altitude_angles.end() - 1;
     ss2 << *it2 << " ]";
-    ROS_DEBUG(ss2.str().c_str());
+    ROS_DEBUG_STREAM(ss2.str());
     
 }
 
@@ -123,12 +126,12 @@ int main(int argc, char** argv) {
     auto tf_prefix        = nh.param("tf_prefix", std::string{});
     auto base_tf          = nh.param("base_tf", std::string{"base"});
     auto to_tf            = nh.param("to_tf", std::string{"ouster"});
-    auto imu_timeout      = nh.param("imu_timeout", int{5});
-    auto publish_raw_pc2  = nh.param("publish_raw_pointcloud", bool{false});
-    auto organized        = nh.param("organized", bool{false});
+    // auto publish_raw_pc2  = nh.param("publish_raw_pointcloud", bool{false});
+    // auto organized        = nh.param("organized", bool{false});
+    // auto raw              = nh.param("raw"      , bool{false} ); // Use the raw point cloud
+    // auto min_distance     = nh.param("min_distance", double{0.5} );
     auto self_test        = nh.param("self_test", bool{false});
-    auto raw              = nh.param("raw"      , bool{false} ); // Use the raw point cloud
-    auto min_distance     = nh.param("min_distance", double{0.5} );
+
     
     boost::circular_buffer<std::shared_ptr<PacketMsg>> cb(300);
 // const PacketMsg& pm

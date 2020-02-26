@@ -1,12 +1,3 @@
-#ifndef IMU_BUF_FIND
-#define IMU_BUF_FIND
-    auto imu_buf_find = [&]( uint64_t error, uint64_t fts ) {
-                          return [error,fts]( const sensor_msgs::Imu &imu ) { 
-                                   auto tval = abs(imu.header.stamp.toNSec() - fts  ); 
-                                   return ( tval < error );
-                                 };
-                        };
-#endif 
 #ifndef LIDAR_HANDLER
 #define LIDAR_HANDLER
     auto lidar_handler = [&](const ouster_ros::PacketMsg& pm) mutable {
