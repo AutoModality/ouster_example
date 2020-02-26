@@ -36,7 +36,7 @@ LidarStates CanProcess( boost::circular_buffer<std::shared_ptr<ouster_ros::Packe
     } else if ( (*start).header.stamp.toNSec() <= times[0] && times.back() <= (*end).header.stamp.toNSec()) {
         auto pos = std::find_if( imu_buf.begin(),end, [&](const sensor_msgs::Imu &val ) {
                                                         auto ts = val.header.stamp.toNSec();
-                                                        return (ts >= times[0] && abs(ts - times[0]) <= delta_ns);
+                                                        return (ts >= times[0] && abs(ts - times[0]) <= (int64_t)delta_ns);
                                                       });
         ROS_DEBUG_STREAM_THROTTLE(1,"Removing IMU(" << std::distance(start,pos) << ") elements");
         int toremove = std::distance(start,pos);
@@ -122,7 +122,7 @@ std::vector<uint16_t> GetFrameIndicies( ouster_ros::PacketMsg &pkt )
 void SetDistances( ouster_ros::PacketMsg &pkt, const std::vector<uint32_t> &ranges )
 {
     uint8_t *buf = pkt.buf.data();
-    int position = 0;
+    uint32_t position = 0;
     for (size_t i = 0; i < ouster::OS1::columns_per_buffer && i < ranges.size() && position < ranges.size() ; i ++ , position ++) {
         const uint8_t *packet_buf = buf;
         uint8_t* col_buf = (uint8_t *)ouster::OS1::nth_col(i, packet_buf);
