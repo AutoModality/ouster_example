@@ -85,7 +85,6 @@ inline uint32_t px_range(const uint8_t* px_buf) {
 }
 
 inline void set_px_range( uint8_t* px_buf, uint32_t distance ) {
-    auto val = px_range( px_buf );
     memcpy(px_buf,&distance,sizeof(uint32_t));
 }
 
