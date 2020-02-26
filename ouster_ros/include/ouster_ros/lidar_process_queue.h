@@ -27,4 +27,8 @@ void SetFrameIndicies( ouster_ros::PacketMsg &pkt, const std::vector<uint16_t> &
 
 std::vector<uint16_t> GetFrameIndicies( ouster_ros::PacketMsg &pkt );
 
+void SetDistances( ouster_ros::PacketMsg &pkt, const std::vector<uint32_t> &ranges );
+
+std::vector<uint32_t> GetDistances( ouster_ros::PacketMsg &pkt);
+
 #endif

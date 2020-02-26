@@ -373,6 +373,7 @@ TEST_F(ImuLidar, RemoveScanPackets )
         imumsg.header.seq = count;
         ros::Time ntime(start.sec,start.nsec + 10000*count);
         imumsg.header.stamp = ntime;
+        imumsg.orientation.x = -1;
         imu_buf.push_back(imumsg);
     }
     cb.clear();
@@ -385,6 +386,10 @@ TEST_F(ImuLidar, RemoveScanPackets )
 
     // Start time of the LidarPacket is After the first IMU has been recorded
     uint64_t tmpval = ros::Time(start.sec,start.nsec + 0*10000).toNSec();    
+    std::vector<uint32_t> distances;
+    for( int i = 0; i < 64*512; i ++ ) {
+      distances.push_back(1000);
+    }
     for ( uint16_t pktnum = 0; pktnum < 2; pktnum ++ ) { // Two scans
         for ( int count = 0; count < 32; count ++ ) { // 32 packets 
             for ( size_t i = 0 ; i < sizeof(buf); i ++ ) {
@@ -398,6 +403,7 @@ TEST_F(ImuLidar, RemoveScanPackets )
                 ids.push_back( i + count * 16 );
             }
             SetMeasurementIndicies( lidarpkt, ids );
+            SetDistances( lidarpkt, distances );
             ids.clear();
 
             lidar_handler( lidarpkt );

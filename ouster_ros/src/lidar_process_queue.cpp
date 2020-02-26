@@ -118,3 +118,34 @@ std::vector<uint16_t> GetFrameIndicies( ouster_ros::PacketMsg &pkt )
     return retval;
 }
 
+
+void SetDistances( ouster_ros::PacketMsg &pkt, const std::vector<uint32_t> &ranges )
+{
+    uint8_t *buf = pkt.buf.data();
+    int position = 0;
+    for (size_t i = 0; i < ouster::OS1::columns_per_buffer && i < ranges.size() && position < ranges.size() ; i ++ , position ++) {
+        const uint8_t *packet_buf = buf;
+        uint8_t* col_buf = (uint8_t *)ouster::OS1::nth_col(i, packet_buf);
+        for ( uint8_t ipx = 0; ipx < 64 && position < ranges.size(); ipx++, position ++) {
+            uint8_t *px_buf = (uint8_t*)ouster::OS1::nth_px(ipx, col_buf);
+            ouster::OS1::set_px_range(px_buf, ranges[i] );
+        }
+    }
+}
+
+std::vector<uint32_t> GetDistances( ouster_ros::PacketMsg &pkt )
+{
+    uint8_t *buf = pkt.buf.data();
+    std::vector<uint32_t> retval;
+    for (size_t i = 0; i < ouster::OS1::columns_per_buffer; i ++ ) {
+        const uint8_t *packet_buf = buf;
+        uint8_t* col_buf = (uint8_t *)ouster::OS1::nth_col(i, packet_buf);
+        for ( uint8_t ipx = 0; ipx < 64; ipx++) {
+            const uint8_t* px_buf = ouster::OS1::nth_px(ipx, col_buf);
+            retval.push_back(ouster::OS1::px_range(px_buf));
+        }
+    }
+
+    return retval;
+}
+

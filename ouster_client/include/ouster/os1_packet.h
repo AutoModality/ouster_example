@@ -9,6 +9,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstring>
+#include <iostream>
 
 namespace ouster {
 namespace OS1 {
@@ -81,6 +82,11 @@ inline uint32_t px_range(const uint8_t* px_buf) {
     memcpy(&res, px_buf, sizeof(uint32_t));
     res &= 0x000fffff;
     return res;
+}
+
+inline void set_px_range( uint8_t* px_buf, uint32_t distance ) {
+    auto val = px_range( px_buf );
+    memcpy(px_buf,&distance,sizeof(uint32_t));
 }
 
 inline uint16_t px_reflectivity(const uint8_t* px_buf) {
