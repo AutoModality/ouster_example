@@ -29,8 +29,20 @@ LidarStates CanProcess( boost::circular_buffer<std::shared_ptr<ouster_ros::Packe
     auto start = imu_buf.begin();
     auto end = imu_buf.end() - 1;
     if ( (*end).header.stamp.toNSec() < times[0] ) { // All IMUS are too old
+        ROS_DEBUG_STREAM_THROTTLE(1,"Removing IMU(" << std::distance(start,end) << ") elements");
+        for ( int i = 0; i < std::distance(start,end); i ++)
+            imu_buf.pop_front();
         return LidarStates::QUEUE;
-    } else if ( (*start).header.stamp.toNSec() - delta_ns <= times[0] && times.back() <= (*end).header.stamp.toNSec()) {
+    } else if ( (*start).header.stamp.toNSec() <= times[0] && times.back() <= (*end).header.stamp.toNSec()) {
+        auto pos = std::find_if( imu_buf.begin(),end, [&](const sensor_msgs::Imu &val ) {
+                                                        auto ts = val.header.stamp.toNSec();
+                                                        return (ts >= times[0] && abs(ts - times[0]) <= delta_ns);
+                                                      });
+        ROS_DEBUG_STREAM_THROTTLE(1,"Removing IMU(" << std::distance(start,pos) << ") elements");
+        int toremove = std::distance(start,pos);
+        for ( int i = 0; i < toremove; i ++ ) {
+            imu_buf.pop_front();
+        }
         return LidarStates::PROCESS;
     } else {
         return LidarStates::SHITCAN;

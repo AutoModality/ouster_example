@@ -84,7 +84,7 @@ TEST_F(ImuLidar,CanProcess)
                                [&](uint64_t scan_ts) mutable {
                                    msg = ouster_ros::OS1::cloud_to_cloud_msg(cloud, std::chrono::nanoseconds{scan_ts}, "lidar_frame");
                                    results.push_back(msg);
-                               });
+                               }, imu_buf);
 
 #include <ouster_ros/lidar_handler.hpp>
 #define LIDAR_HANDLER
@@ -148,13 +148,25 @@ TEST_F(ImuLidar,CanProcess)
       ASSERT_EQ( ntimes[i], 1 );
     }
 
+    // Clear out
+    imu_buf.clear();
+    cb.clear();
+
+    for ( count = 0; count < 64 ; count ++ ) {
+        imumsg.header.seq = count;
+        ros::Time ntime(start.sec, 10000*count);
+        imumsg.header.stamp = ntime;
+        imu_buf.push_back(imumsg);
+    }
+    auto tmpval = ros::Time(start.sec, 10000*32).toNSec();
+
+    SetTimes( lidarpkt, std::vector<uint64_t>{tmpval,tmpval,tmpval,tmpval,tmpval,tmpval,tmpval,tmpval,tmpval,tmpval,tmpval,tmpval,tmpval,tmpval,tmpval,tmpval});    
+    cb.push_back(std::make_shared<ouster_ros::PacketMsg>(lidarpkt));
+    retval = CanProcess(cb, imu_buf, 100000 );
+    ASSERT_EQ(LidarStates::PROCESS,retval );
+    ASSERT_EQ(32,imu_buf.size() );
+
     
-    
-    // ASSERT_EQ( retval, LidarStates::PROCESS );
-    // lidar_handler( lidarpkt );
-    // ASSERT_EQ(results.size(), 1);
-    // for ( imu_buf.begin(),imu_buf.end() ) {
-    // }
 
 }
 
@@ -335,7 +347,7 @@ TEST_F(ImuLidar, RemoveScanPackets )
     sensor_msgs::Imu imumsg;
     ros::Time::init();
     ros::Time reftime = ros::Time::now();
-    ros::Time start(reftime.toSec(),10000);
+    ros::Time start(reftime.toSec(),0);
     ouster_ros::PacketMsg lidarpkt;
     int count;
     uint16_t W = 512,H = 16;
@@ -350,7 +362,7 @@ TEST_F(ImuLidar, RemoveScanPackets )
                                [&](uint64_t scan_ts) mutable {
                                    msg = ouster_ros::OS1::cloud_to_cloud_msg(cloud, std::chrono::nanoseconds{scan_ts}, "lidar_frame");
                                    results.push_back(msg);
-                               });
+                               },imu_buf);
 
     
     for ( count = 1; count <= 64 ; count ++ ) {
@@ -366,6 +378,8 @@ TEST_F(ImuLidar, RemoveScanPackets )
 #include <ouster_ros/lidar_handler.hpp>
 
 #include "bufdat.h"
+
+    // Start time of the LidarPacket is After the first IMU has been recorded
     uint64_t tmpval = ros::Time(start.sec,start.nsec + 0*10000).toNSec();    
     for ( uint16_t pktnum = 0; pktnum < 2; pktnum ++ ) { // Two scans
         for ( int count = 0; count < 32; count ++ ) { // 32 packets 
@@ -384,8 +398,10 @@ TEST_F(ImuLidar, RemoveScanPackets )
 
             lidar_handler( lidarpkt );
         }
+        tmpval = ros::Time(start.sec,start.nsec + 30*10000).toNSec();    
     }
-    ASSERT_EQ(cb.size(),64);
+    ASSERT_EQ(0,cb.size());
+    ASSERT_EQ(1,results.size());
     
 }
 

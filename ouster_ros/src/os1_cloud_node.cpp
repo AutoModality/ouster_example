@@ -181,7 +181,7 @@ int main(int argc, char** argv) {
             msg = ouster_ros::OS1::cloud_to_cloud_msg(
                 cloud, std::chrono::nanoseconds{scan_ts}, lidar_frame);
             lidar_pub.publish(msg);
-        });
+        }, imu_buf );
 
     
     // lidar_handler definition

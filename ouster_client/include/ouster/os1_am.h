@@ -9,7 +9,10 @@
 #include <functional>
 #include <iterator>
 #include <vector>
-
+#include <boost/circular_buffer.hpp>
+#include <sensor_msgs/Imu.h>
+#include <ros/console.h>
+#include <ros/ros.h>
 #include "ouster/os1_packet.h"
 
 namespace ouster {
@@ -38,15 +41,15 @@ namespace OS1 {
  * which data is added for every point in the scan.
  */
 template <typename iterator_type, typename F, typename C>
-std::function<void(const uint8_t*, iterator_type it ,bool)> am_batch_to_iter(
+std::function<void(const uint8_t*, iterator_type it ,boost::circular_buffer<sensor_msgs::Imu> &imu_buf, bool)> am_batch_to_iter(
     const std::vector<double>& xyz_lut, int W, int H,
-    const typename iterator_type::value_type& empty, C&& c, F&& f) {
+    const typename iterator_type::value_type& empty, C&& c, F&& f, boost::circular_buffer<sensor_msgs::Imu> &imu_buf ) {
     int next_m_id{W};
     int32_t cur_f_id{-1};
     int64_t scan_ts{-1L};
     bool local_s_can{false};
 
-    return [=](const uint8_t* packet_buf, iterator_type it, bool s_can ) mutable {
+    return [=](const uint8_t* packet_buf, iterator_type it, boost::circular_buffer<sensor_msgs::Imu> &imu_buf,bool s_can ) mutable {
              local_s_can = s_can;
         for (int icol = 0; icol < OS1::columns_per_buffer; icol++) {
             const uint8_t* col_buf = OS1::nth_col(icol, packet_buf);
@@ -85,12 +88,21 @@ std::function<void(const uint8_t*, iterator_type it ,bool)> am_batch_to_iter(
 
             // index of the first point in current packet
             const int idx = H * m_id;
-
-            for (uint8_t ipx = 0; ipx < H; ipx++) {
+            if ( !local_s_can ) { 
+              for (uint8_t ipx = 0; ipx < H; ipx++) {
                 const uint8_t* px_buf = OS1::nth_px(ipx, col_buf);
                 uint32_t r = OS1::px_range(px_buf);
                 int ind = 3 * (idx + ipx);
-
+                auto nearest_imu = std::find_if(imu_buf.begin(),imu_buf.end(),
+                                                [&](const sensor_msgs::Imu &imu ) {
+                                                    return imu.header.stamp.toNSec() >= scan_ts;
+                                                }
+                                                            );
+                if ( nearest_imu == imu_buf.end() ) {
+                  // local_s_can = true;
+                  ROS_ERROR_THROTTLE(0.5,"ERROR: should have found IMU but didn't");
+                  // break;
+                }
                 // x, y, z(m), i, ts, reflectivity, ring, noise, range (mm)
                 it[idx + ipx] = c(r * 0.001f * xyz_lut[ind + 0],
                                   r * 0.001f * xyz_lut[ind + 1],
@@ -98,6 +110,7 @@ std::function<void(const uint8_t*, iterator_type it ,bool)> am_batch_to_iter(
                                   OS1::px_signal_photons(px_buf), ts - scan_ts,
                                   OS1::px_reflectivity(px_buf), ipx,
                                   OS1::px_noise_photons(px_buf), r);
+              }
             }
         }
     };
