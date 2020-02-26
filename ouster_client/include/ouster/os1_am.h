@@ -46,15 +46,34 @@ namespace OS1 {
  * which data is added for every point in the scan.
  */
 template <typename iterator_type, typename F, typename C>
-std::function<void(const uint8_t*, iterator_type it ,boost::circular_buffer<sensor_msgs::Imu> &imu_buf, bool, geometry_msgs::TransformStamped &)> am_batch_to_iter(
-    const std::vector<double>& xyz_lut, int W, int H,
-    const typename iterator_type::value_type& empty, C&& c, F&& f, boost::circular_buffer<sensor_msgs::Imu> &imu_buf, geometry_msgs::TransformStamped &static_transform ) {
+std::function<void(const uint8_t*, iterator_type it ,bool )>
+am_batch_to_iter(
+                 const std::vector<double>& xyz_lut,
+                 int W,
+                 int H,
+                 const typename iterator_type::value_type& empty,
+                 C&& c,
+                 F&& f,
+                 boost::circular_buffer<sensor_msgs::Imu> &imu_buf,
+                 geometry_msgs::TransformStamped &static_transform
+                 ) {
     int next_m_id{W};
     int32_t cur_f_id{-1};
     uint64_t scan_ts{0L};
     bool local_s_can{false};
 
-    return [=](const uint8_t* packet_buf, iterator_type it, boost::circular_buffer<sensor_msgs::Imu> &imu_buf,bool s_can ,geometry_msgs::TransformStamped &static_transform ) mutable {
+    return [&static_transform,
+            &imu_buf,
+            &xyz_lut,
+            local_s_can,
+            scan_ts,
+            cur_f_id,
+            next_m_id,
+            empty,
+            c,
+            f,
+            W,H
+            ](const uint8_t* packet_buf, iterator_type it, bool s_can ) mutable {
              local_s_can = s_can;
         for (int icol = 0; icol < OS1::columns_per_buffer; icol++) {
             const uint8_t* col_buf = OS1::nth_col(icol, packet_buf);

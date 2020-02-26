@@ -223,12 +223,22 @@ int main(int argc, char** argv) {
     boost::circular_buffer<sensor_msgs::Imu> imu_buf(2000);
 
     auto batch_and_publish = OS1::am_batch_to_iter<CloudOS1::iterator>(
-        xyz_lut, W, H, {}, &PointOS1::make,
-        [&](uint64_t scan_ts) mutable {
-            msg = ouster_ros::OS1::cloud_to_cloud_msg(
-                cloud, std::chrono::nanoseconds{scan_ts}, lidar_frame);
-            lidar_pub.publish(msg);
-        }, imu_buf , static_transform );
+                                                                       xyz_lut,
+                                                                       W,
+                                                                       H,
+                                                                       {},
+                                                                       &PointOS1::make,
+                                                                       [&](uint64_t scan_ts) mutable {
+                                                                           msg = ouster_ros::OS1::cloud_to_cloud_msg(
+                                                                                                                     cloud,
+                                                                                                                     std::chrono::nanoseconds{scan_ts},
+                                                                                                                     lidar_frame
+                                                                                                                     );
+                                                                           lidar_pub.publish(msg);
+                                                                       },
+                                                                       imu_buf,
+                                                                       static_transform
+                                                                       );
 
     
     // lidar_handler definition

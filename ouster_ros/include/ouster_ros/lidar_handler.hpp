@@ -12,14 +12,14 @@
             switch (status) {
                 case LidarStates::PROCESS:
                   tmppm = cb.front();
-                  batch_and_publish(tmppm->buf.data(), it , imu_buf,false, static_transform );
+                  batch_and_publish(tmppm->buf.data(), it , false);
                   cb.pop_front();
                   break;
                 case LidarStates::QUEUE:
                   break;
                 case LidarStates::SHITCAN:
                   tmppm = cb.front();
-                  batch_and_publish(tmppm->buf.data(), it , imu_buf,true , static_transform );
+                  batch_and_publish(tmppm->buf.data(), it , true );
                   cb.pop_front();
                   break;
                 default:
