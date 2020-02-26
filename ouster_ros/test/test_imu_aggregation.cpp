@@ -47,7 +47,7 @@ struct ImuLidar : public ::testing::Test
       boost::circular_buffer<sensor_msgs::Imu> imu_buf;
       boost::circular_buffer<std::shared_ptr<ouster_ros::PacketMsg>> cb;
       std::vector<sensor_msgs::PointCloud2> results;
-
+      geometry_msgs::TransformStamped static_transform;
       sensor_msgs::PointCloud2 msg{};
       
       ImuLidar() : imu_buf(1000) , cb(1000)  {}
@@ -57,6 +57,10 @@ struct ImuLidar : public ::testing::Test
         xyz_lut = ouster::OS1::make_xyz_lut(W, H, beam_azimuth_angles,beam_altitude_angles);
           imu_buf.clear();
           results.clear();
+          static_transform.transform.rotation.x = static_transform.transform.rotation.y = static_transform.transform.rotation.z = 0.0;
+          static_transform.transform.rotation.w = 1.0;
+
+          
       }
 
       virtual void TearDown() {
@@ -84,7 +88,7 @@ TEST_F(ImuLidar,CanProcess)
                                [&](uint64_t scan_ts) mutable {
                                    msg = ouster_ros::OS1::cloud_to_cloud_msg(cloud, std::chrono::nanoseconds{scan_ts}, "lidar_frame");
                                    results.push_back(msg);
-                               }, imu_buf);
+                               }, imu_buf, static_transform);
 
 #include <ouster_ros/lidar_handler.hpp>
 #define LIDAR_HANDLER
@@ -362,7 +366,7 @@ TEST_F(ImuLidar, RemoveScanPackets )
                                [&](uint64_t scan_ts) mutable {
                                    msg = ouster_ros::OS1::cloud_to_cloud_msg(cloud, std::chrono::nanoseconds{scan_ts}, "lidar_frame");
                                    results.push_back(msg);
-                               },imu_buf);
+                               },imu_buf, static_transform);
 
     
     for ( count = 1; count <= 64 ; count ++ ) {

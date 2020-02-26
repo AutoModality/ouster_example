@@ -31,7 +31,8 @@
 #include <tf2/convert.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <latency_testing/DelayStatistics.h>
-
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <geometry_msgs/TransformStamped.h>
 
 //#include <latency_testing/DelayStatistics.h>
 //#include <latency_testing/Concerns.h>
@@ -155,6 +156,49 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
+    tf2_ros::Buffer tfBuffer;
+    tf2_ros::TransformListener tfListener(tfBuffer);
+    geometry_msgs::TransformStamped static_transform; // TODO 
+    int count = 0;
+    ros::Rate rate(10.0);
+    bool found_xform = false;
+    if ( self_test ) {
+        static_transform.transform.rotation.x = static_transform.transform.rotation.y = static_transform.transform.rotation.z = 0.0;                                                         
+        static_transform.transform.rotation.w = 1.0;
+    } else {
+        while (nh.ok() && count < 100){
+            try{
+                static_transform = tfBuffer.lookupTransform(base_tf, to_tf,ros::Time(1));
+                count = 100;
+                found_xform = true;
+                ROS_DEBUG_STREAM("Got " << static_transform );
+                
+            }
+            catch (tf2::TransformException &ex) {
+                ROS_WARN("%s",ex.what());
+                ros::Duration(0.1).sleep();
+                count ++;
+                continue;
+            }
+            rate.sleep();
+        }
+        if ( !found_xform ) {
+            ROS_ERROR_STREAM("Could not get static_transform from base to tf" );
+            return EXIT_FAILURE;
+        }
+    }
+
+    tf2::Quaternion static_rotate(static_transform.transform.rotation.x,
+                                  static_transform.transform.rotation.y,
+                                  static_transform.transform.rotation.z,
+                                  static_transform.transform.rotation.w);
+
+    tf2::Quaternion static_rotate_prime(-static_transform.transform.rotation.x,
+                                        -static_transform.transform.rotation.y,
+                                        -static_transform.transform.rotation.z,
+                                        static_transform.transform.rotation.w);
+
+    
     uint32_t H = OS1::pixels_per_column;
     uint32_t W = OS1::n_cols_of_lidar_mode(
         OS1::lidar_mode_of_string(cfg.response.lidar_mode));
@@ -181,7 +225,7 @@ int main(int argc, char** argv) {
             msg = ouster_ros::OS1::cloud_to_cloud_msg(
                 cloud, std::chrono::nanoseconds{scan_ts}, lidar_frame);
             lidar_pub.publish(msg);
-        }, imu_buf );
+        }, imu_buf , static_transform );
 
     
     // lidar_handler definition

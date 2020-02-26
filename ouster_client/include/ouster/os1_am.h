@@ -14,6 +14,11 @@
 #include <ros/console.h>
 #include <ros/ros.h>
 #include "ouster/os1_packet.h"
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2/LinearMath/Transform.h>
+#include <geometry_msgs/Point.h>
+#include <geometry_msgs/PointStamped.h>
+#include <geometry_msgs/TransformStamped.h>
 
 namespace ouster {
 namespace OS1 {
@@ -41,15 +46,15 @@ namespace OS1 {
  * which data is added for every point in the scan.
  */
 template <typename iterator_type, typename F, typename C>
-std::function<void(const uint8_t*, iterator_type it ,boost::circular_buffer<sensor_msgs::Imu> &imu_buf, bool)> am_batch_to_iter(
+std::function<void(const uint8_t*, iterator_type it ,boost::circular_buffer<sensor_msgs::Imu> &imu_buf, bool, geometry_msgs::TransformStamped &)> am_batch_to_iter(
     const std::vector<double>& xyz_lut, int W, int H,
-    const typename iterator_type::value_type& empty, C&& c, F&& f, boost::circular_buffer<sensor_msgs::Imu> &imu_buf ) {
+    const typename iterator_type::value_type& empty, C&& c, F&& f, boost::circular_buffer<sensor_msgs::Imu> &imu_buf, geometry_msgs::TransformStamped &static_transform ) {
     int next_m_id{W};
     int32_t cur_f_id{-1};
-    int64_t scan_ts{-1L};
+    uint64_t scan_ts{0L};
     bool local_s_can{false};
 
-    return [=](const uint8_t* packet_buf, iterator_type it, boost::circular_buffer<sensor_msgs::Imu> &imu_buf,bool s_can ) mutable {
+    return [=](const uint8_t* packet_buf, iterator_type it, boost::circular_buffer<sensor_msgs::Imu> &imu_buf,bool s_can ,geometry_msgs::TransformStamped &static_transform ) mutable {
              local_s_can = s_can;
         for (int icol = 0; icol < OS1::columns_per_buffer; icol++) {
             const uint8_t* col_buf = OS1::nth_col(icol, packet_buf);
@@ -64,7 +69,7 @@ std::function<void(const uint8_t*, iterator_type it ,boost::circular_buffer<sens
 
             if (f_id != cur_f_id) {
                 // if not initializing with first packet
-                if (scan_ts != -1 ) {
+                if (scan_ts != 0 ) {
                     // zero out remaining missing columns
                     std::fill(it + (H * next_m_id), it + (H * W), empty);
                     if ( !local_s_can ) {
@@ -99,17 +104,43 @@ std::function<void(const uint8_t*, iterator_type it ,boost::circular_buffer<sens
                                                 }
                                                             );
                 if ( nearest_imu == imu_buf.end() ) {
-                  // local_s_can = true;
-                  ROS_ERROR_THROTTLE(0.5,"ERROR: should have found IMU but didn't");
+                  local_s_can = true;
+                  ROS_ERROR_THROTTLE(0.5,"SERIOUS ERROR: should have found IMU but didn't");
                   // break;
                 }
+                tf2::Quaternion q1{(*nearest_imu).orientation.x,(*nearest_imu).orientation.y,(*nearest_imu).orientation.z,(*nearest_imu).orientation.w};
+
+                tf2::Quaternion qimu((*nearest_imu).orientation.x,(*nearest_imu).orientation.y,(*nearest_imu).orientation.z,(*nearest_imu).orientation.w);
+                tf2::Matrix3x3 m(qimu);
+                tf2Scalar roll, pitch, yaw;
+                tf2::Quaternion result;
+                m.getRPY(roll,pitch,yaw);
+                qimu.setRPY( roll,pitch,0 );
+
+                tf2::Quaternion ntransform = tf2::Quaternion{qimu.x(),qimu.y(),qimu.z(),qimu.w()}*                                                           
+                                                             tf2::Quaternion{static_transform.transform.rotation.x,                                                          
+                                                                             static_transform.transform.rotation.y,                                                          
+                                                                             static_transform.transform.rotation.z,                                                          
+                                                                             static_transform.transform.rotation.w};
+                tf2::Quaternion ntransformp = tf2::Quaternion{-static_transform.transform.rotation.x,                                                          
+                                                              -static_transform.transform.rotation.y,                                                          
+                                                              -static_transform.transform.rotation.z,                                                          
+                                                              static_transform.transform.rotation.w}*tf2::Quaternion{-qimu.x(),-qimu.y(),-qimu.z(),qimu.w()};
+                result = ntransform * tf2::Quaternion{r * 0.001f * xyz_lut[ind + 0],r * 0.001f * xyz_lut[ind + 1],r * 0.001f * xyz_lut[ind + 2],0}*ntransformp; 
+                
                 // x, y, z(m), i, ts, reflectivity, ring, noise, range (mm)
-                it[idx + ipx] = c(r * 0.001f * xyz_lut[ind + 0],
-                                  r * 0.001f * xyz_lut[ind + 1],
-                                  r * 0.001f * xyz_lut[ind + 2],
+                it[idx + ipx] = c(result.x(),
+                                  result.y(),
+                                  result.z(),
                                   OS1::px_signal_photons(px_buf), ts - scan_ts,
                                   OS1::px_reflectivity(px_buf), ipx,
                                   OS1::px_noise_photons(px_buf), r);
+                // it[idx + ipx] = c(r * 0.001f * xyz_lut[ind + 0],
+                //                   r * 0.001f * xyz_lut[ind + 1],
+                //                   r * 0.001f * xyz_lut[ind + 2],
+                //                   OS1::px_signal_photons(px_buf), ts - scan_ts,
+                //                   OS1::px_reflectivity(px_buf), ipx,
+                //                   OS1::px_noise_photons(px_buf), r);
               }
             }
         }
