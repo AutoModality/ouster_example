@@ -7,7 +7,7 @@
         std::shared_ptr<ouster_ros::PacketMsg> tmppm;
         ROS_DEBUG_STREAM_THROTTLE(1,"Running");
         do { 
-            status = CanProcess( cb, imu_buf, 10000 );
+          status = CanProcess( cb, imu_buf, 10000 );
             ROS_DEBUG_STREAM_THROTTLE(1,"cb(" << cb.size() << ")" << " imu(" << imu_buf.size() << ")");
             switch (status) {
                 case LidarStates::PROCESS:

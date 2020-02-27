@@ -125,7 +125,7 @@ am_batch_to_iter(
                      if ( nearest_imu == imu_buf.end() ) {
                        local_s_can = true;
                        ROS_ERROR_THROTTLE(0.5,"SERIOUS ERROR: should have found IMU but didn't");
-                       // break;
+                       break;
                      }
                      tf2::Quaternion q1{(*nearest_imu).orientation.x,(*nearest_imu).orientation.y,(*nearest_imu).orientation.z,(*nearest_imu).orientation.w};
 

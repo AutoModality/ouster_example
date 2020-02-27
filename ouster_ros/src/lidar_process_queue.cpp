@@ -29,8 +29,9 @@ LidarStates CanProcess( boost::circular_buffer<std::shared_ptr<ouster_ros::Packe
     auto start = imu_buf.begin();
     auto end = imu_buf.end() - 1;
     if ( (*end).header.stamp.toNSec() < times[0] ) { // All IMUS are too old
-        ROS_DEBUG_STREAM_THROTTLE(1,"Removing IMU(" << std::distance(start,end) << ") elements");
-        for ( int i = 0; i < std::distance(start,end); i ++)
+        size_t distance = std::distance(start,end);
+        ROS_DEBUG_STREAM_THROTTLE(1,"Removing IMU=" << distance << " elements");
+        for ( int i = 0; i < distance; i ++)
             imu_buf.pop_front();
         return LidarStates::QUEUE;
     } else if ( (*start).header.stamp.toNSec() <= times[0] && times.back() <= (*end).header.stamp.toNSec()) {
@@ -38,9 +39,9 @@ LidarStates CanProcess( boost::circular_buffer<std::shared_ptr<ouster_ros::Packe
                                                         auto ts = val.header.stamp.toNSec();
                                                         return (ts >= times[0] && abs(ts - times[0]) <= (int64_t)delta_ns);
                                                       });
-        ROS_DEBUG_STREAM_THROTTLE(1,"Removing IMU(" << std::distance(start,pos) << ") elements");
-        int toremove = std::distance(start,pos);
-        for ( int i = 0; i < toremove; i ++ ) {
+        auto distance =  std::distance(start,pos);
+        ROS_DEBUG_STREAM_THROTTLE(1,"Removing IMU=" << distance << " elements");
+        for ( int i = 0; i < distance; i ++ ) {
             imu_buf.pop_front();
         }
         return LidarStates::PROCESS;
@@ -69,8 +70,9 @@ void SetTimes( ouster_ros::PacketMsg &pkt , const std::vector<uint64_t> &times )
     uint8_t *buf = pkt.buf.data();
     for (size_t i = 0; i < ouster::OS1::columns_per_buffer && i < times.size(); i ++ ) {
         const uint8_t *packet_buf = buf;
-        const uint8_t* col_buf = ouster::OS1::nth_col(i, packet_buf);
+        uint8_t* col_buf = (uint8_t*)ouster::OS1::nth_col(i, packet_buf);
         *((uint64_t *)col_buf) = times[i];
+        ouster::OS1::set_col_valid(col_buf);
     }
 }
 
@@ -79,12 +81,13 @@ void SetTimes( ouster_ros::PacketMsg &pkt , const std::vector<ros::Time> &times 
     uint8_t *buf = pkt.buf.data();
     for (size_t i = 0; i < ouster::OS1::columns_per_buffer ; i ++ ) {
         const uint8_t *packet_buf = buf;
-        const uint8_t* col_buf = ouster::OS1::nth_col(i, packet_buf);
+        uint8_t* col_buf = (uint8_t*)ouster::OS1::nth_col(i, packet_buf);
         if ( i > times.size() ) {
           *((uint64_t *)col_buf) = times.back().toNSec();
         } else {
           *((uint64_t *)col_buf) = times[i].toNSec();
         }
+        ouster::OS1::set_col_valid(col_buf);
     }
 }
 
@@ -96,6 +99,7 @@ void SetMeasurementIndicies( ouster_ros::PacketMsg &pkt, const std::vector<uint1
         const uint8_t *packet_buf = buf;
         uint8_t* col_buf = (uint8_t *)ouster::OS1::nth_col(i, packet_buf);
         ouster::OS1::col_set_measurement_id( col_buf, indicies[i] );
+        ouster::OS1::set_col_valid(col_buf);
     }
 }
 

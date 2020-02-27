@@ -72,6 +72,12 @@ inline uint32_t col_valid(const uint8_t* col_buf) {
     return res;
 }
 
+inline void set_col_valid(uint8_t* col_buf) {
+    uint32_t res= 0xffffffff;
+    memcpy(col_buf + (16 + pixels_per_column * pixel_bytes),&res,sizeof(uint32_t));
+}
+  
+
 // lidar pixel fields
 inline const uint8_t* nth_px(int n, const uint8_t* col_buf) {
     return col_buf + 16 + (n * pixel_bytes);

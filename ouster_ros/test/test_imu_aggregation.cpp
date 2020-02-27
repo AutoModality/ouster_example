@@ -56,6 +56,7 @@ struct ImuLidar : public ::testing::Test
         ros::Time::init();
         xyz_lut = ouster::OS1::make_xyz_lut(W, H, beam_azimuth_angles,beam_altitude_angles);
           imu_buf.clear();
+          cb.clear();
           results.clear();
           static_transform.transform.rotation.x = static_transform.transform.rotation.y = static_transform.transform.rotation.z = 0.0;
           static_transform.transform.rotation.w = 1.0;
@@ -466,11 +467,14 @@ void GenImus( boost::circular_buffer<sensor_msgs::Imu> &imu_buf, ros::Time start
     }
 }
 
+#define PACKET_BUFFER_SIZE 12609
 
 void GenPackets(boost::circular_buffer<std::shared_ptr<ouster_ros::PacketMsg>> &cb,  
                 ros::Time start,
                 ros::Time end,
-                uint32_t num_frames
+                uint32_t num_frames,
+                uint16_t start_frame,
+                uint16_t start_mid
                 )
 { 
     uint64_t stime = start.toNSec(), etime = end.toNSec();
@@ -479,9 +483,8 @@ void GenPackets(boost::circular_buffer<std::shared_ptr<ouster_ros::PacketMsg>> &
     uint64_t incr  =  range / (num_frames-1);
     sensor_msgs::Imu imumsg;
     ouster_ros::PacketMsg lidarpkt;
-#include "bufdat.h"
-    for ( size_t i = 0 ; i < sizeof(buf); i ++ ) {
-        lidarpkt.buf.push_back( buf[i] );
+    for ( size_t i = 0 ; i < PACKET_BUFFER_SIZE ; i ++ ) {
+        lidarpkt.buf.push_back( 0 );
     }
     
     for ( uint64_t cnt = stime; cnt <= etime; cnt += incr , count ++) {
@@ -492,12 +495,14 @@ void GenPackets(boost::circular_buffer<std::shared_ptr<ouster_ros::PacketMsg>> &
                                                         tmpval +incr/4   ,tmpval+5*incr/16   , tmpval+3*incr/8  ,tmpval+7*incr/16,
                                                         tmpval +incr/2   ,tmpval+9*incr/16   , tmpval+5*incr/8  ,tmpval+11*incr/16,
                                                         tmpval +3*incr/4 ,tmpval+13*incr/16  , tmpval+7*incr/8 , tmpval+15*incr/16});
+
             cb.push_back(std::make_shared<ouster_ros::PacketMsg>(lidarpkt));
         }
     }
+    ROS_DEBUG_STREAM("Added " << cb.size() << " packets");
 }
 
-#define PACKET_BUFFER_SIZE 12609
+
 
 ouster_ros::PacketMsg GenPacket(const std::vector<ros::Time> &timestamps, 
                                 const std::vector<uint16_t> &mids, 
@@ -528,7 +533,7 @@ TEST_F(ImuLidar,ScanOldPackets)
     imu_buf.clear();
     cb.clear();
     ros::Time reftime = ros::Time(1582820000,0 );
-    ros::Time start(reftime.toSec(),10000);
+    ros::Time start(reftime.sec,reftime.nsec);
     ros::Time end(reftime.toSec(),10000000); // 10 ms
 
     int count;
@@ -546,55 +551,34 @@ TEST_F(ImuLidar,ScanOldPackets)
                                    results.push_back(msg);
                                },imu_buf, static_transform);
 
-
-
-    GenImus( imu_buf, start, ros::Time(reftime.toSec()+2,10000),600);
-    ASSERT_EQ( 600,imu_buf.size());
-    GenPackets(cb, start,ros::Time(reftime.toSec()+2),10);
-    ASSERT_EQ(32*10,cb.size());
-
-
     cb.clear();
     imu_buf.clear();
-
-    GenImus( imu_buf, start, end,600);
-    //
-    GenPackets( cb,  ros::Time(start.sec-2,start.nsec),start, 8 ); // 8 frames before IMU's were processed
-    GenPackets( cb,  start,end, 2 );                               // 2 frames after IMU's started
-
-    auto atimes = GetTimes(*(cb.back()));
-
-    ASSERT_EQ(600,imu_buf.size());
-    ASSERT_EQ(10*32,cb.size());
-
-    auto retval  = CanProcess( cb, imu_buf, 1000 );
-    ASSERT_EQ( LidarStates::SHITCAN, retval );
-
-    ASSERT_EQ( 10 * 32, cb.size() );
-    // Create the new packet
-    uint16_t mid = 30;
-    uint16_t fid = 333;
-    auto lidarpkt = GenPacket(std::vector<ros::Time> {ros::Time(start.sec,start.nsec+1000000)},std::vector<uint16_t>{mid},std::vector<uint16_t> {fid}, std::vector<uint32_t>{1000,1000} );
-    // lidar_handler(lidarpkt);
-    //Some tests on the genpacket
-    auto ts = GetTimes( lidarpkt );
-    ASSERT_EQ( ros::Time(start.sec,start.nsec+1000000).toNSec(), ts[0] );
-    ASSERT_EQ( ros::Time(start.sec,start.nsec+1000000).toNSec(), ts.back() );
-    ASSERT_EQ( mid, GetMeasurementIndicies(lidarpkt)[0] );
-    ASSERT_EQ( fid, GetFrameIndicies(lidarpkt)[0] );
-    ASSERT_EQ( 1000,GetDistances(lidarpkt)[0] );
-
-
-    ASSERT_EQ( 0, results.size() );
-    // Currently have 320 packets  .
-    // We add one more that is going to be valid
-    // Should have 2 Full packets and then we start the next packet.
+    ROS_DEBUG_STREAM( "Cb=" << cb.size() << " imu_buf=" << imu_buf.size() );
 #undef LIDAR_HANDLER
 #include <ouster_ros/lidar_handler.hpp>
-    lidar_handler( lidarpkt );
 
-    ASSERT_EQ( 0, cb.size() );
-    ASSERT_EQ( 1, results.size() );
+    //////////////////
+    /// START TEST 
+    /////////////////
+    GenImus( imu_buf, start, end,600);
+    ROS_DEBUG_STREAM("Imus      = [ " << imu_buf.front().header.stamp.toNSec() << " , " << imu_buf.back().header.stamp.toNSec() << " ]" );
+    auto pktstart = ros::Time(start.sec-2,start.nsec);
+    GenPackets( cb, pktstart ,start, 8 , 3000, 42 ); // 8 frames before IMU's were processed
+    ROS_DEBUG_STREAM("LidarPkts = [ " << GetTimes((*cb.front()))[0] << " , " << GetTimes((*cb.back()))[15] << " ]" );
+    auto lidarpkt = GenPacket(std::vector<ros::Time> {ros::Time(start.sec,start.nsec+1000)},std::vector<uint16_t>{10},std::vector<uint16_t> {42}, std::vector<uint32_t>{1000,1000} );
+    ROS_DEBUG_STREAM( "Cb=" << cb.size() << " imu_buf=" << imu_buf.size() );
+    ROS_DEBUG_STREAM("LidarPkt  = [ " << GetTimes(lidarpkt)[0] << " , " << GetTimes(lidarpkt)[15] << " ] ");
+    auto retval  = CanProcess( cb, imu_buf, 1000 );
+    ROS_DEBUG_STREAM("\n");
+    ROS_DEBUG_STREAM( "Cb=" << cb.size() << " imu_buf=" << imu_buf.size() );
+    ROS_DEBUG_STREAM("Imus      = [ " << imu_buf.front().header.stamp.toNSec() << " , " << imu_buf.back().header.stamp.toNSec() << " ]" );
+    ROS_DEBUG_STREAM("LidarPkts = [ " << GetTimes((*cb.front()))[0] << " , " << GetTimes((*cb.back()))[15] << " ]" );
+    
+
+    lidar_handler( lidarpkt );    
+    ASSERT_GE( imu_buf.size(), 0 );
+    // ASSERT_EQ( 0, cb.size() );
+
 
 }
 
@@ -610,3 +594,40 @@ main(int argc, char *argv[] )
   ros::init(argc, argv, "delaystats" );
   return RUN_ALL_TESTS();
 }
+
+
+    // auto tmp = *(cb.front());
+    // ASSERT_EQ( pktstart.toNSec(),GetTimes(tmp)[0] );
+    // GenPackets( cb,  start,end, 2 ,3008, 42 );   // 2 frames After IMUS
+
+    // auto aa = imu_buf.back();
+    // auto bb = imu_buf.front();
+
+    // ASSERT_EQ(600,imu_buf.size());
+    // ASSERT_EQ(10*32,cb.size());
+
+    // auto retval  = CanProcess( cb, imu_buf, 1000 );
+    // ASSERT_EQ( LidarStates::SHITCAN, retval );
+
+    // ASSERT_EQ( 10 * 32, cb.size() );
+    // // Create the new packet
+    // uint16_t mid = 30;
+    // uint16_t fid = 333;
+    // 
+    // // lidar_handler(lidarpkt);
+    // //Some tests on the genpacket
+    // auto ts = GetTimes( lidarpkt );
+    // ASSERT_EQ( ros::Time(start.sec,start.nsec+1000000).toNSec(), ts[0] );
+    // ASSERT_EQ( ros::Time(start.sec,start.nsec+1000000).toNSec(), ts.back() );
+    // ASSERT_EQ( mid, GetMeasurementIndicies(lidarpkt)[0] );
+    // ASSERT_EQ( fid, GetFrameIndicies(lidarpkt)[0] );
+    // ASSERT_EQ( 1000,GetDistances(lidarpkt)[0] );
+
+
+    // ASSERT_EQ( 0, results.size() );
+    // Currently have 320 packets  .
+    // We add one more that is going to be valid
+    // Should have 2 Full packets and then we start the next packet.
+
+
+    // ASSERT_EQ( 1, results.size() );
