@@ -4,7 +4,7 @@ project(ouster_ros)
 set(CMAKE_CXX_STANDARD 14)
 
 set(CMAKE_CXX_FLAGS         "${CMAKE_CXX_FLAGS} -Wall -Wextra")
-set(CMAKE_CXX_FLAGS_DEBUG   "-O0 -g")
+set(CMAKE_CXX_FLAGS_DEBUG   "-O0 -ggdb3")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 
 find_package(PkgConfig REQUIRED)

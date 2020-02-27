@@ -486,7 +486,7 @@ void GenPackets(boost::circular_buffer<std::shared_ptr<ouster_ros::PacketMsg>> &
     
     for ( uint64_t cnt = stime; cnt <= etime; cnt += incr , count ++) {
         for ( int i = 0; i < 32 ; i ++ ) {
-            uint32_t tmpval = cnt;
+            uint64_t tmpval = cnt;
             int refval;
             SetTimes( lidarpkt, std::vector<uint64_t>{tmpval,tmpval+incr/16,tmpval+incr/8,tmpval+3*incr/16,
                                                         tmpval +incr/4   ,tmpval+5*incr/16   , tmpval+3*incr/8  ,tmpval+7*incr/16,
@@ -561,6 +561,9 @@ TEST_F(ImuLidar,ScanOldPackets)
     //
     GenPackets( cb,  ros::Time(start.sec-2,start.nsec),start, 8 ); // 8 frames before IMU's were processed
     GenPackets( cb,  start,end, 2 );                               // 2 frames after IMU's started
+
+    auto atimes = GetTimes(*(cb.back()));
+
     ASSERT_EQ(600,imu_buf.size());
     ASSERT_EQ(10*32,cb.size());
 
@@ -581,12 +584,17 @@ TEST_F(ImuLidar,ScanOldPackets)
     ASSERT_EQ( fid, GetFrameIndicies(lidarpkt)[0] );
     ASSERT_EQ( 1000,GetDistances(lidarpkt)[0] );
 
+
+    ASSERT_EQ( 0, results.size() );
+    // Currently have 320 packets  .
+    // We add one more that is going to be valid
+    // Should have 2 Full packets and then we start the next packet.
 #undef LIDAR_HANDLER
 #include <ouster_ros/lidar_handler.hpp>
     lidar_handler( lidarpkt );
 
-    ASSERT_EQ( cb.size(), 10 );
-
+    ASSERT_EQ( 0, cb.size() );
+    ASSERT_EQ( 1, results.size() );
 
 }
 
