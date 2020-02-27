@@ -497,6 +497,27 @@ void GenPackets(boost::circular_buffer<std::shared_ptr<ouster_ros::PacketMsg>> &
     }
 }
 
+#define PACKET_BUFFER_SIZE 12609
+
+ouster_ros::PacketMsg GenPacket(const std::vector<ros::Time> &timestamps, 
+                                const std::vector<uint16_t> &mids, 
+                                const std::vector<uint16_t> &fids, 
+                                const std::vector<uint32_t> &distances)
+{
+    ouster_ros::PacketMsg lidarpkt;
+    for ( size_t i = 0 ; i < PACKET_BUFFER_SIZE; i ++ ) {
+        lidarpkt.buf.push_back( 0 );
+    }
+
+    SetTimes( lidarpkt, timestamps );
+    SetFrameIndicies( lidarpkt, fids);
+    SetMeasurementIndicies( lidarpkt, mids );
+    SetDistances( lidarpkt, distances );
+
+    return lidarpkt;
+}
+
+
 // Scenario: We have many old packets that are in cb
 // new imus filled up our system but we aren't purging
 // the newest elements
@@ -506,9 +527,27 @@ TEST_F(ImuLidar,ScanOldPackets)
     ros::Time::init();
     imu_buf.clear();
     cb.clear();
-    ros::Time reftime = ros::Time::now();
+    ros::Time reftime = ros::Time(1582820000,0 );
     ros::Time start(reftime.toSec(),10000);
     ros::Time end(reftime.toSec(),10000000); // 10 ms
+
+    int count;
+    uint16_t W = 512,H = 16;
+    ouster_ros::OS1::CloudOS1 cloud{W,H};
+    geometry_msgs::Quaternion q;
+    std::vector<sensor_msgs::PointCloud2> results;
+    auto it = cloud.begin();
+    SetUp(W,H);
+
+    auto batch_and_publish = ouster::OS1::am_batch_to_iter<ouster_ros::OS1::CloudOS1::iterator>(
+                               xyz_lut, W, H, {}, &ouster_ros::OS1::PointOS1::make,
+                               [&](uint64_t scan_ts) mutable {
+                                   msg = ouster_ros::OS1::cloud_to_cloud_msg(cloud, std::chrono::nanoseconds{scan_ts}, "lidar_frame");
+                                   results.push_back(msg);
+                               },imu_buf, static_transform);
+
+
+
     GenImus( imu_buf, start, ros::Time(reftime.toSec()+2,10000),600);
     ASSERT_EQ( 600,imu_buf.size());
     GenPackets(cb, start,ros::Time(reftime.toSec()+2),10);
@@ -528,7 +567,25 @@ TEST_F(ImuLidar,ScanOldPackets)
     auto retval  = CanProcess( cb, imu_buf, 1000 );
     ASSERT_EQ( LidarStates::SHITCAN, retval );
 
-    ASSERT_EQ( 2 * 32, cb.size() );
+    ASSERT_EQ( 10 * 32, cb.size() );
+    // Create the new packet
+    uint16_t mid = 30;
+    uint16_t fid = 333;
+    auto lidarpkt = GenPacket(std::vector<ros::Time> {ros::Time(start.sec,start.nsec+1000000)},std::vector<uint16_t>{mid},std::vector<uint16_t> {fid}, std::vector<uint32_t>{1000,1000} );
+    // lidar_handler(lidarpkt);
+    //Some tests on the genpacket
+    auto ts = GetTimes( lidarpkt );
+    ASSERT_EQ( ros::Time(start.sec,start.nsec+1000000).toNSec(), ts[0] );
+    ASSERT_EQ( ros::Time(start.sec,start.nsec+1000000).toNSec(), ts.back() );
+    ASSERT_EQ( mid, GetMeasurementIndicies(lidarpkt)[0] );
+    ASSERT_EQ( fid, GetFrameIndicies(lidarpkt)[0] );
+    ASSERT_EQ( 1000,GetDistances(lidarpkt)[0] );
+
+#undef LIDAR_HANDLER
+#include <ouster_ros/lidar_handler.hpp>
+    lidar_handler( lidarpkt );
+
+    ASSERT_EQ( cb.size(), 10 );
 
 
 }

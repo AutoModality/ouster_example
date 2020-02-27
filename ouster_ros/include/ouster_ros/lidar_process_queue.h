@@ -19,6 +19,8 @@ std::vector<uint64_t> GetTimes( const ouster_ros::PacketMsg  &pkt );
 
 void SetTimes( ouster_ros::PacketMsg &pkt , const std::vector<uint64_t> &times );
 
+void SetTimes( ouster_ros::PacketMsg &pkt , const std::vector<ros::Time> &times );
+
 void SetMeasurementIndicies( ouster_ros::PacketMsg &pkt, const std::vector<uint16_t> &indicies );
 
 std::vector<uint16_t> GetMeasurementIndicies( const ouster_ros::PacketMsg &pkt );

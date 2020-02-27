@@ -45,6 +45,7 @@ LidarStates CanProcess( boost::circular_buffer<std::shared_ptr<ouster_ros::Packe
         }
         return LidarStates::PROCESS;
     } else {
+
         return LidarStates::SHITCAN;
     }
 }
@@ -72,6 +73,21 @@ void SetTimes( ouster_ros::PacketMsg &pkt , const std::vector<uint64_t> &times )
         *((uint64_t *)col_buf) = times[i];
     }
 }
+
+void SetTimes( ouster_ros::PacketMsg &pkt , const std::vector<ros::Time> &times )
+{
+    uint8_t *buf = pkt.buf.data();
+    for (size_t i = 0; i < ouster::OS1::columns_per_buffer ; i ++ ) {
+        const uint8_t *packet_buf = buf;
+        const uint8_t* col_buf = ouster::OS1::nth_col(i, packet_buf);
+        if ( i > times.size() ) {
+          *((uint64_t *)col_buf) = times.back().toNSec();
+        } else {
+          *((uint64_t *)col_buf) = times[i].toNSec();
+        }
+    }
+}
+
 
 void SetMeasurementIndicies( ouster_ros::PacketMsg &pkt, const std::vector<uint16_t> &indicies )
 {
