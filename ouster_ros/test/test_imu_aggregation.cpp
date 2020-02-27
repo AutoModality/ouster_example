@@ -416,6 +416,7 @@ TEST_F(ImuLidar, RemoveScanPackets )
 }
 
 
+
 // Make sure that position doesn't change if the IMU buf is long enough 
 TEST_F(ImuLidar,CbufPosition)
 {
@@ -445,6 +446,90 @@ TEST_F(ImuLidar,CbufPosition)
     };
     ASSERT_EQ(600,imu_buf.size());
     ASSERT_EQ(ros::Time(start.sec, start.nsec+ 10000*500 ),imu_buf.front().header.stamp );
+
+}
+
+
+void GenImus( boost::circular_buffer<sensor_msgs::Imu> &imu_buf, ros::Time start, ros::Time end, uint32_t num_imus )
+{
+    uint64_t stime = start.toNSec(), etime = end.toNSec();
+    uint64_t range = ( etime - stime );
+    int count = 0;
+    uint64_t incr  =  range / (num_imus-1);
+    sensor_msgs::Imu imumsg;
+    for ( uint64_t cnt = stime; cnt < etime; cnt += incr , count ++) {
+        imumsg.header.seq = count;
+        ros::Time ntime;
+        ntime.fromNSec(cnt);
+        imumsg.header.stamp = ntime;
+        imu_buf.push_back(imumsg);
+    }
+}
+
+
+void GenPackets(boost::circular_buffer<std::shared_ptr<ouster_ros::PacketMsg>> &cb,  
+                ros::Time start,
+                ros::Time end,
+                uint32_t num_frames
+                )
+{ 
+    uint64_t stime = start.toNSec(), etime = end.toNSec();
+    uint64_t range = ( etime - stime );
+    int count = 0;
+    uint64_t incr  =  range / (num_frames-1);
+    sensor_msgs::Imu imumsg;
+    ouster_ros::PacketMsg lidarpkt;
+#include "bufdat.h"
+    for ( size_t i = 0 ; i < sizeof(buf); i ++ ) {
+        lidarpkt.buf.push_back( buf[i] );
+    }
+    
+    for ( uint64_t cnt = stime; cnt <= etime; cnt += incr , count ++) {
+        for ( int i = 0; i < 32 ; i ++ ) {
+            uint32_t tmpval = cnt;
+            int refval;
+            SetTimes( lidarpkt, std::vector<uint64_t>{tmpval,tmpval+incr/16,tmpval+incr/8,tmpval+3*incr/16,
+                                                        tmpval +incr/4   ,tmpval+5*incr/16   , tmpval+3*incr/8  ,tmpval+7*incr/16,
+                                                        tmpval +incr/2   ,tmpval+9*incr/16   , tmpval+5*incr/8  ,tmpval+11*incr/16,
+                                                        tmpval +3*incr/4 ,tmpval+13*incr/16  , tmpval+7*incr/8 , tmpval+15*incr/16});
+            cb.push_back(std::make_shared<ouster_ros::PacketMsg>(lidarpkt));
+        }
+    }
+}
+
+// Scenario: We have many old packets that are in cb
+// new imus filled up our system but we aren't purging
+// the newest elements
+//
+TEST_F(ImuLidar,ScanOldPackets)
+{
+    ros::Time::init();
+    imu_buf.clear();
+    cb.clear();
+    ros::Time reftime = ros::Time::now();
+    ros::Time start(reftime.toSec(),10000);
+    ros::Time end(reftime.toSec(),10000000); // 10 ms
+    GenImus( imu_buf, start, ros::Time(reftime.toSec()+2,10000),600);
+    ASSERT_EQ( 600,imu_buf.size());
+    GenPackets(cb, start,ros::Time(reftime.toSec()+2),10);
+    ASSERT_EQ(32*10,cb.size());
+
+
+    cb.clear();
+    imu_buf.clear();
+
+    GenImus( imu_buf, start, end,600);
+    //
+    GenPackets( cb,  ros::Time(start.sec-2,start.nsec),start, 8 ); // 8 frames before IMU's were processed
+    GenPackets( cb,  start,end, 2 );                               // 2 frames after IMU's started
+    ASSERT_EQ(600,imu_buf.size());
+    ASSERT_EQ(10*32,cb.size());
+
+    auto retval  = CanProcess( cb, imu_buf, 1000 );
+    ASSERT_EQ( LidarStates::SHITCAN, retval );
+
+    ASSERT_EQ( 2 * 32, cb.size() );
+
 
 }
 
