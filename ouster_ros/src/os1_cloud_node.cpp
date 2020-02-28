@@ -133,8 +133,8 @@ int main(int argc, char** argv) {
     auto self_test        = nh.param("self_test", bool{false});
 
     
-    boost::circular_buffer<std::shared_ptr<PacketMsg>> cb(2000);
-// const PacketMsg& pm
+    boost::circular_buffer<std::shared_ptr<PacketMsg>> cb(20000);
+
 
     std::atomic_uint  num_imus{0};
 
@@ -220,7 +220,7 @@ int main(int argc, char** argv) {
     auto it = cloud.begin();
     sensor_msgs::PointCloud2 msg{};
 
-    boost::circular_buffer<sensor_msgs::Imu> imu_buf(2000);
+    boost::circular_buffer<sensor_msgs::Imu> imu_buf(100);
 
     auto batch_and_publish = OS1::am_batch_to_iter<CloudOS1::iterator>(
                                                                        xyz_lut,

@@ -25,7 +25,7 @@
                 case LidarStates::QUEUE:
                   break;
                 case LidarStates::SHITCAN:
-                  
+		  ROS_DEBUG_THROTTLE(1,"SCanning");
                   tmppm = cb.front();
                   local_scan = false;
                   batch_and_publish(tmppm->buf.data(), it , local_scan );

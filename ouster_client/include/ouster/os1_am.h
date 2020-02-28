@@ -116,6 +116,9 @@ am_batch_to_iter(
                      const uint8_t* px_buf = OS1::nth_px(ipx, col_buf);
                      uint32_t r = OS1::px_range(px_buf);
                      int ind = 3 * (idx + ipx);
+                     tf2::Quaternion result;
+		     //#ifdef LEVEL
+#ifndef LEVEL
                      auto nearest_imu = std::find_if(imu_buf.begin(),imu_buf.end(),
                                                      [&](const sensor_msgs::Imu &imu ) {
                                                          return imu.header.stamp.toNSec() >= scan_ts;
@@ -126,12 +129,14 @@ am_batch_to_iter(
                        ROS_ERROR_THROTTLE(0.5,"SERIOUS ERROR: should have found IMU but didn't");
                        break;
                      }
+
+
                      tf2::Quaternion q1{(*nearest_imu).orientation.x,(*nearest_imu).orientation.y,(*nearest_imu).orientation.z,(*nearest_imu).orientation.w};
 
                      tf2::Quaternion qimu((*nearest_imu).orientation.x,(*nearest_imu).orientation.y,(*nearest_imu).orientation.z,(*nearest_imu).orientation.w);
                      tf2::Matrix3x3 m(qimu);
                      tf2Scalar roll, pitch, yaw;
-                     tf2::Quaternion result;
+
                      m.getRPY(roll,pitch,yaw);
                      qimu.setRPY( roll,pitch,0 );
 
@@ -144,7 +149,8 @@ am_batch_to_iter(
                                                                    -static_transform.transform.rotation.y,                                                          
                                                                    -static_transform.transform.rotation.z,                                                          
                                                                    static_transform.transform.rotation.w}*tf2::Quaternion{-qimu.x(),-qimu.y(),-qimu.z(),qimu.w()};
-                     result = ntransform * tf2::Quaternion{r * 0.001f * xyz_lut[ind + 0],r * 0.001f * xyz_lut[ind + 1],r * 0.001f * xyz_lut[ind + 2],0}*ntransformp; 
+                     result = ntransform * tf2::Quaternion{r * 0.001f * xyz_lut[ind + 0],r * 0.001f * xyz_lut[ind + 1],r * 0.001f * xyz_lut[ind + 2],0}*ntransformp;
+#endif
                 
                      // x, y, z(m), i, ts, reflectivity, ring, noise, range (mm)
                      it[idx + ipx] = c(result.x(),

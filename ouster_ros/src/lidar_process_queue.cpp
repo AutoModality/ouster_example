@@ -36,17 +36,18 @@ LidarStates CanProcess( boost::circular_buffer<std::shared_ptr<ouster_ros::Packe
         return LidarStates::QUEUE;
     } else if ( (*start).header.stamp.toNSec() <= times[0] && times.back() <= (*end).header.stamp.toNSec()) {
         auto pos = imu_buf.begin();
-        for ( ; pos != end; pos ++ ) {
-            if ((*pos).header.stamp.toNSec() >= times[0] ) {
-                break;
-            }
-        }
+        // for ( ; pos != end; pos ++ ) {
+        //     if ((*pos).header.stamp.toNSec() >= times[0] ) {
+        //         break;
+        //     }
+        // }
         auto distance =  std::distance(start,pos);
-        ROS_DEBUG_STREAM_THROTTLE(1,"Removing IMU=" << distance << " elements");
-        for ( int i = 0; i < distance; i ++ ) {
-            imu_buf.pop_front();
-        }
+        // ROS_DEBUG_STREAM_THROTTLE(1,"Removing IMU=" << distance << " elements");
+        // for ( int i = 0; i < distance; i ++ ) {
+        //     imu_buf.pop_front();
+        // }
         return LidarStates::PROCESS;
+	ROS_DEBUG_STREAM_THROTTLE(1,"Process: [" <<  (*start).header.stamp.toNSec() << ", " << (*end).header.stamp.toNSec() << "]" << " cmp [" << times[0] << ", " << times.back() << "]");
     } else {
 
         return LidarStates::SHITCAN;
