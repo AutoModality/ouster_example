@@ -566,6 +566,8 @@ TEST_F(ImuLidar,ScanOldPackets)
     GenPackets( cb, pktstart ,start, 8 , 3000, 42 ); // 8 frames before IMU's were processed
     ROS_DEBUG_STREAM("LidarPkts = [ " << GetTimes((*cb.front()))[0] << " , " << GetTimes((*cb.back()))[15] << " ]" );
     auto lidarpkt = GenPacket(std::vector<ros::Time> {ros::Time(start.sec,start.nsec+1000)},std::vector<uint16_t>{10},std::vector<uint16_t> {42}, std::vector<uint32_t>{1000,1000} );
+    ASSERT_EQ( ros::Time(start.sec,start.nsec+1000).toNSec(),GetTimes(lidarpkt)[1] );
+
     ROS_DEBUG_STREAM( "Cb=" << cb.size() << " imu_buf=" << imu_buf.size() );
     ROS_DEBUG_STREAM("LidarPkt  = [ " << GetTimes(lidarpkt)[0] << " , " << GetTimes(lidarpkt)[15] << " ] ");
     auto retval  = CanProcess( cb, imu_buf, 1000 );
@@ -576,9 +578,9 @@ TEST_F(ImuLidar,ScanOldPackets)
     
 
     lidar_handler( lidarpkt );    
-    ASSERT_GE( imu_buf.size(), 0 );
-    // ASSERT_EQ( 0, cb.size() );
-
+    ASSERT_EQ(599, imu_buf.size() );
+    ASSERT_EQ( 0, cb.size() );
+    ASSERT_EQ( 1, results.size());
 
 }
 
@@ -595,39 +597,3 @@ main(int argc, char *argv[] )
   return RUN_ALL_TESTS();
 }
 
-
-    // auto tmp = *(cb.front());
-    // ASSERT_EQ( pktstart.toNSec(),GetTimes(tmp)[0] );
-    // GenPackets( cb,  start,end, 2 ,3008, 42 );   // 2 frames After IMUS
-
-    // auto aa = imu_buf.back();
-    // auto bb = imu_buf.front();
-
-    // ASSERT_EQ(600,imu_buf.size());
-    // ASSERT_EQ(10*32,cb.size());
-
-    // auto retval  = CanProcess( cb, imu_buf, 1000 );
-    // ASSERT_EQ( LidarStates::SHITCAN, retval );
-
-    // ASSERT_EQ( 10 * 32, cb.size() );
-    // // Create the new packet
-    // uint16_t mid = 30;
-    // uint16_t fid = 333;
-    // 
-    // // lidar_handler(lidarpkt);
-    // //Some tests on the genpacket
-    // auto ts = GetTimes( lidarpkt );
-    // ASSERT_EQ( ros::Time(start.sec,start.nsec+1000000).toNSec(), ts[0] );
-    // ASSERT_EQ( ros::Time(start.sec,start.nsec+1000000).toNSec(), ts.back() );
-    // ASSERT_EQ( mid, GetMeasurementIndicies(lidarpkt)[0] );
-    // ASSERT_EQ( fid, GetFrameIndicies(lidarpkt)[0] );
-    // ASSERT_EQ( 1000,GetDistances(lidarpkt)[0] );
-
-
-    // ASSERT_EQ( 0, results.size() );
-    // Currently have 320 packets  .
-    // We add one more that is going to be valid
-    // Should have 2 Full packets and then we start the next packet.
-
-
-    // ASSERT_EQ( 1, results.size() );

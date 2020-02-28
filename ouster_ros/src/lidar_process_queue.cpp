@@ -35,10 +35,12 @@ LidarStates CanProcess( boost::circular_buffer<std::shared_ptr<ouster_ros::Packe
             imu_buf.pop_front();
         return LidarStates::QUEUE;
     } else if ( (*start).header.stamp.toNSec() <= times[0] && times.back() <= (*end).header.stamp.toNSec()) {
-        auto pos = std::find_if( imu_buf.begin(),end, [&](const sensor_msgs::Imu &val ) {
-                                                        auto ts = val.header.stamp.toNSec();
-                                                        return (ts >= times[0] && abs(ts - times[0]) <= (int64_t)delta_ns);
-                                                      });
+        auto pos = imu_buf.begin();
+        for ( ; pos != end; pos ++ ) {
+            if ((*pos).header.stamp.toNSec() >= times[0] ) {
+                break;
+            }
+        }
         auto distance =  std::distance(start,pos);
         ROS_DEBUG_STREAM_THROTTLE(1,"Removing IMU=" << distance << " elements");
         for ( int i = 0; i < distance; i ++ ) {
@@ -68,10 +70,14 @@ std::vector<uint64_t> GetTimes( const ouster_ros::PacketMsg  &pkt )
 void SetTimes( ouster_ros::PacketMsg &pkt , const std::vector<uint64_t> &times )
 {
     uint8_t *buf = pkt.buf.data();
-    for (size_t i = 0; i < ouster::OS1::columns_per_buffer && i < times.size(); i ++ ) {
+    for (size_t i = 0; i < ouster::OS1::columns_per_buffer ; i ++ ) {
         const uint8_t *packet_buf = buf;
         uint8_t* col_buf = (uint8_t*)ouster::OS1::nth_col(i, packet_buf);
-        *((uint64_t *)col_buf) = times[i];
+        if ( i >= times.size() ) { 
+            *((uint64_t *)col_buf) = times.back();
+        } else {
+            *((uint64_t *)col_buf) = times[i];
+        }
         ouster::OS1::set_col_valid(col_buf);
     }
 }
@@ -82,7 +88,7 @@ void SetTimes( ouster_ros::PacketMsg &pkt , const std::vector<ros::Time> &times 
     for (size_t i = 0; i < ouster::OS1::columns_per_buffer ; i ++ ) {
         const uint8_t *packet_buf = buf;
         uint8_t* col_buf = (uint8_t*)ouster::OS1::nth_col(i, packet_buf);
-        if ( i > times.size() ) {
+        if ( i >= times.size() ) {
           *((uint64_t *)col_buf) = times.back().toNSec();
         } else {
           *((uint64_t *)col_buf) = times[i].toNSec();

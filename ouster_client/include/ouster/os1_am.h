@@ -46,7 +46,7 @@ namespace OS1 {
  * which data is added for every point in the scan.
  */
 template <typename iterator_type, typename F, typename C>
-std::function<void(const uint8_t*, iterator_type it ,bool )>
+std::function<void(const uint8_t*, iterator_type it ,bool &)>
 am_batch_to_iter(
                  const std::vector<double>& xyz_lut,
                  int W,
@@ -60,12 +60,11 @@ am_batch_to_iter(
     int next_m_id{W};
     int32_t cur_f_id{-1};
     int64_t scan_ts{-1L};
-    bool local_s_can{false};
+    // bool local_s_can{false};
 
     return [&static_transform,
             &imu_buf,
             &xyz_lut,
-            local_s_can,
             scan_ts,
             cur_f_id,
             next_m_id,
@@ -73,8 +72,8 @@ am_batch_to_iter(
             c,
             f,
             W,H
-            ](const uint8_t* packet_buf, iterator_type it, bool s_can ) mutable {
-               local_s_can = s_can;
+            ](const uint8_t* packet_buf, iterator_type it, bool &s_can ) mutable {
+
                for (int icol = 0; icol < OS1::columns_per_buffer; icol++) {
                  const uint8_t* col_buf = OS1::nth_col(icol, packet_buf);
                  const uint16_t m_id = OS1::col_measurement_id(col_buf);
@@ -91,11 +90,11 @@ am_batch_to_iter(
                    if (scan_ts != -1 ) {
                      // zero out remaining missing columns
                      std::fill(it + (H * next_m_id), it + (H * W), empty);
-                     if ( !local_s_can ) {
+                     if ( !s_can ) {
                        f(scan_ts);
-                     } else {
-                       local_s_can = false;
                      }
+                     s_can = false;
+
                    }
 
                    // start new frame
@@ -112,7 +111,7 @@ am_batch_to_iter(
 
                  // index of the first point in current packet
                  const int idx = H * m_id;
-                 if ( !local_s_can ) { 
+                 if ( !s_can ) { 
                    for (uint8_t ipx = 0; ipx < H; ipx++) {
                      const uint8_t* px_buf = OS1::nth_px(ipx, col_buf);
                      uint32_t r = OS1::px_range(px_buf);
@@ -123,7 +122,7 @@ am_batch_to_iter(
                                                      }
                                                      );
                      if ( nearest_imu == imu_buf.end() ) {
-                       local_s_can = true;
+                       s_can = true;
                        ROS_ERROR_THROTTLE(0.5,"SERIOUS ERROR: should have found IMU but didn't");
                        break;
                      }
