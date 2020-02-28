@@ -3,7 +3,6 @@
   <!-- -90X 139Z XYZ -->
   <node pkg="tf2_ros" type="static_transform_publisher" name="ouster_tf" args="0.155 0.0 0.23 -0.2476 0.662 0.662 0.2476 base ouster" />
   
-  <node pkg="tf2_ros" type="static_transform_publisher" name="body_tf" args="0.0 0.0 0.0 0.0 0.0 0.0 1.0 body_FLU body_Level_FLU" />
   
   
   <arg name="os1_hostname" default="192.168.1.55" doc="hostname or IP in dotted decimal form of the sensor"/>
