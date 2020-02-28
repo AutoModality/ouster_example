@@ -17,7 +17,7 @@
 	  
 	  switch (status) {
                 case LidarStates::PROCESS:
-		  ROS_DEBUG("Processing");
+		  ROS_DEBUG_THROTTLE(1,"Processing");
                   tmppm = cb.front();
                   batch_and_publish(tmppm->buf.data(), it , local_scan);
                   cb.pop_front();
@@ -27,7 +27,7 @@
                 case LidarStates::SHITCAN:
                   
                   tmppm = cb.front();
-                  local_scan = true;
+                  local_scan = false;
                   batch_and_publish(tmppm->buf.data(), it , local_scan );
                   cb.pop_front();
                   break;

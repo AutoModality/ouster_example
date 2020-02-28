@@ -328,6 +328,11 @@ std::shared_ptr<client> init_client(const std::string& hostname,
         sock_fd, {"set_config_param", "lidar_mode", to_string(mode)}, res);
     success &= res == "set_config_param";
 
+    success &= do_tcp_cmd(
+        sock_fd, {"set_config_param", "timestamp_mode", "TIME_FROM_PTP_1588"}, res);
+    success &= res == "set_config_param";
+
+    
     success &= do_tcp_cmd(sock_fd, {"get_sensor_info"}, res);
     success &= reader->parse(res.c_str(), res.c_str() + res.size(), &cli->meta,
                              &errors);

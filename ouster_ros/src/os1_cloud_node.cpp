@@ -133,7 +133,7 @@ int main(int argc, char** argv) {
     auto self_test        = nh.param("self_test", bool{false});
 
     
-    boost::circular_buffer<std::shared_ptr<PacketMsg>> cb(300);
+    boost::circular_buffer<std::shared_ptr<PacketMsg>> cb(2000);
 // const PacketMsg& pm
 
     std::atomic_uint  num_imus{0};
