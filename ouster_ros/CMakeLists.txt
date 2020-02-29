@@ -24,7 +24,6 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_geometry_msgs
   latency_testing
   rostest
-  vb_util_lib
 )
 
 add_message_files(FILES PacketMsg.msg)
