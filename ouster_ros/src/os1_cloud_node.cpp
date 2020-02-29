@@ -236,7 +236,6 @@ int main(int argc, char** argv) {
     auto it = cloud.begin();
     sensor_msgs::PointCloud2 msg{};
     sensor_msgs::PointCloud2 msg_raw{};
-    ros::Time reading_time;
 
     auto batch_and_publish = OS1::batch_to_iter<CloudOS1::iterator>(xyz_lut,
                                   W,
@@ -245,7 +244,6 @@ int main(int argc, char** argv) {
 								  &PointOS1::make,
         [&](uint64_t scan_ts) mutable {
                                     CloudOS1 *thiscloud;
-                                    reading_time = ros::Time::now();
                                     if ( organized ) {
                                         filter_pointcloud( cloud, scaled_cloud );
                                         thiscloud = &scaled_cloud;
@@ -253,13 +251,11 @@ int main(int argc, char** argv) {
                                         thiscloud = &send_cloud;
                                     }
                                     tf2::Quaternion result;
-                                    
-                                    
                                     for ( uint32_t i = 0; i < (*thiscloud).size() ; i ++ ) {
 					  if ( !raw ) {
 					    if (std::sqrt((*thiscloud)[i].x*(*thiscloud)[i].x + (*thiscloud)[i].y*(*thiscloud)[i].y + (*thiscloud)[i].z*(*thiscloud)[i].z) >= min_distance) {
 					      auto imu = average_imus( imu_entries[i],imu_entries[i+1] );
-								
+
 					      geometry_msgs::Point outmsg;
 					      tf2::Quaternion qimu(imu.orientation.x,imu.orientation.y,imu.orientation.z,imu.orientation.w);
 					      tf2::Matrix3x3 m(qimu);
@@ -275,12 +271,12 @@ int main(int argc, char** argv) {
 					      tf2::Quaternion ntprime = tf2::Quaternion{-static_transform.transform.rotation.x,
 					      						-static_transform.transform.rotation.y,
 					      						-static_transform.transform.rotation.z,
-					      						static_transform.transform.rotation.w}; //* 
-								        //tf2::Quaternion{-qimu.x(),
-					      				//		-qimu.y(),
-					      				//		-qimu.z(),
-					      				//		qimu.w()};
-					      result = ntransform * tf2::Quaternion{(*thiscloud)[i].x,(*thiscloud)[i].y,(*thiscloud)[i].z,0}*ntprime;
+					      						static_transform.transform.rotation.w} * 
+								        tf2::Quaternion{-qimu.x(),
+					      						-qimu.y(),
+					      						-qimu.z(),
+					      						qimu.w()};
+					      result = ntransform * tf2::Quaternion{(*thiscloud)[i].x,(*thiscloud)[i].y,(*thiscloud)[i].z,0}; //*ntprime;
 					    } else {
                                               result.setX(0);
                                               result.setY(0);
@@ -295,7 +291,7 @@ int main(int argc, char** argv) {
 					  (*thiscloud)[i].y = result.y();
 					  (*thiscloud)[i].z = result.z();			  
                                       }
-																		
+
                                     msg = ouster_ros::OS1::cloud_to_cloud_msg(
                                                                               *thiscloud,
                                                                               std::chrono::nanoseconds{scan_ts},
@@ -314,8 +310,6 @@ int main(int argc, char** argv) {
           msg.header.frame_id = "body_Level_FLU";
 				    //am::MeasureDelayStop (ros::this_node::getName() + "/ouster_pcl_delay" );
 				    //am::MeasureDelayStart(ros::this_node::getName() + "/ouster_pcl_delay" );
-				    
-				  msg.header.stamp = reading_time;
           lidar_pub.publish(msg);
           send_cloud.clear();
           imu_entries.clear();

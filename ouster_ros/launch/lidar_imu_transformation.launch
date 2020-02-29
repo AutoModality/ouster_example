@@ -1,6 +1,0 @@
-<?xml version="1.0"?>
-<launch>
-	<node pkg="ouster_ros" type="lidar_imu_transformation_test" name="lidar_imu_transformation_test" output="screen">
-	</node>
-</launch>
-

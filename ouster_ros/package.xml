@@ -32,7 +32,6 @@
   <!-- <exec_depend>ouster_viz</exec_depend> -->
   <exec_depend>latency_testing</exec_depend>
   <exec_depend>am_utils</exec_depend>
-  <depend>vb_util_lib</depend>
 
   <export></export>
 </package>
