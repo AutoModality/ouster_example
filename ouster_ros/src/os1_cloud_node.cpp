@@ -255,14 +255,14 @@ int main(int argc, char** argv) {
 					  if ( !raw ) {
 					    if (std::sqrt((*thiscloud)[i].x*(*thiscloud)[i].x + (*thiscloud)[i].y*(*thiscloud)[i].y + (*thiscloud)[i].z*(*thiscloud)[i].z) >= min_distance) {
 					      auto imu = average_imus( imu_entries[i],imu_entries[i+1] );
-
+					      // auto imu = imu_entries[i];
 					      geometry_msgs::Point outmsg;
 					      tf2::Quaternion qimu(imu.orientation.x,imu.orientation.y,imu.orientation.z,imu.orientation.w);
 					      tf2::Matrix3x3 m(qimu);
 					      tf2Scalar roll, pitch, yaw;
 					      m.getRPY(roll,pitch,yaw);
 					      qimu.setRPY( roll,pitch,0 );
-					      tf2::Quaternion ntransform = //tf2::Quaternion{qimu.x(),qimu.y(),qimu.z(),qimu.w()}*
+					      tf2::Quaternion ntransform = tf2::Quaternion{qimu.x(),qimu.y(),qimu.z(),qimu.w()}*
 					       				   tf2::Quaternion{static_transform.transform.rotation.x,
 											   static_transform.transform.rotation.y,
 											   static_transform.transform.rotation.z,
@@ -276,7 +276,7 @@ int main(int argc, char** argv) {
 					      						-qimu.y(),
 					      						-qimu.z(),
 					      						qimu.w()};
-					      result = ntransform * tf2::Quaternion{(*thiscloud)[i].x,(*thiscloud)[i].y,(*thiscloud)[i].z,0}; //*ntprime;
+					      result = ntransform * tf2::Quaternion{(*thiscloud)[i].x,(*thiscloud)[i].y,(*thiscloud)[i].z,0}*ntprime;
 					    } else {
                                               result.setX(0);
                                               result.setY(0);
@@ -366,7 +366,7 @@ int main(int argc, char** argv) {
                                                                       (void)ev;
                                                                       auto val = num_imus.load();
                                                                       if ( val == 0 ) {
-									                                                        //am::MeasureDelayStart(ros::this_node::getName() + "/external_imu_cb" );
+									//am::MeasureDelayStart(ros::this_node::getName() + "/external_imu_cb" );
                                                                           ros::Duration(imu_timeout).sleep();
                                                                           //am::MeasureDelayStop(ros::this_node::getName() + "/external_imu_cb" );
                                                                           ROS_ERROR_STREAM("IMU has taken longer than " << imu_timeout << " seconds"  );
