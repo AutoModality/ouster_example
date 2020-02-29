@@ -116,7 +116,3 @@ endif(CATKIN_ENABLE_TESTING)
 
 
 install(DIRECTORY data    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION} )
-
-add_executable(lidar_imu_transformation_test src/lidar_imu_transformation_test)
-add_dependencies(lidar_imu_transformation_test ${catkin_EXPORTED_TARGETS} )
-target_link_libraries(lidar_imu_transformation_test ${catkin_LIBRARIES} vb_util_lib)
