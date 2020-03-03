@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<launch>
+	<include file="$(find ouster_ros)/launch/os1_top_roll90_pitch41_acsl.launch"/>
+    <include file="$(find imu_filter_madgwick)/launch/imu_ouster_filter.launch"/>
+    <include file="$(find ouster_ros)/launch/lidar_imu_transformation.launch"/>
+    <include file="$(find y3space_driver)/launch/driver.launch"/>
+    
+
+</launch>

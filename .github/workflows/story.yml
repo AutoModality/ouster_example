@@ -8,9 +8,10 @@ jobs:
   build:
     runs-on: ubuntu-18.04
     steps:
-      - uses: actions/checkout@v1
+      - name: Clean Workspace
+        uses: AutoModality/action-clean@v1.0.1
+      - uses: actions/checkout@v2
       - name: Package
-        id: package
         uses: AutoModality/action-package-debian-ros@v1.3.2
         with:
           dev-repo-entitlement: ${{ secrets.CLOUDSMITH_READ_DEV_ENTITLEMENT }}

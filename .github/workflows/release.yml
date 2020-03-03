@@ -43,6 +43,7 @@ jobs:
     needs: release
     name: Package if released
     steps:
+      - uses: AutoModality/action-clean@v1
       - name: Checkout
         uses: actions/checkout@v2
       - name: Download release
