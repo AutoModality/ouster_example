@@ -15,12 +15,11 @@ jobs:
       - uses: actions/checkout@v2
       - name: Package
         id: package
-        uses: AutoModality/action-package-debian-ros@BB-800/melodic
+        uses: AutoModality/action-package-debian-ros@v3.0.0
         with:
           branch: ${{ github.event.pull_request.head.ref }}
           pull-request-number: ${{ github.event.number }}
           build-number: ${{ github.run_number }}
-          dev-repo-entitlement: ${{ secrets.CLOUDSMITH_READ_DEV_ENTITLEMENT }} #Remove when BB-800 MELODIC is merged
           release-repo-entitlement: ${{ secrets.CLOUDSMITH_READ_RELEASE_ENTITLEMENT }}
       - name: The generated package
         run: echo "The artifact is ${{ steps.package.outputs.artifact-path }}"
