@@ -66,7 +66,7 @@ jobs:
       - name: Package if published
         if: steps.published.outputs.value == 'true'
         id: package
-        uses: AutoModality/action-package-debian-ros@v1.3.2
+        uses: AutoModality/action-package-debian-ros@v3.0.0
         with:
           version: ${{ steps.version.outputs.value }}
           release-repo-entitlement: ${{ secrets.CLOUDSMITH_READ_RELEASE_ENTITLEMENT }}
@@ -81,5 +81,5 @@ jobs:
           owner: 'automodality'
           repo: 'release'
           distro: 'ubuntu'
-          release: 'xenial'
+          release: 'bionic'
           file: '${{ steps.package.outputs.artifact-path }}'

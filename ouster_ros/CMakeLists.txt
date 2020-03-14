@@ -76,7 +76,7 @@ install(TARGETS os1_node
 install(FILES os1.launch os1_bottom.launch  os1_bottom_pitch_-90degrees.launch os1_tmux.launch  os1_top_pitch30degress_rotate90.launch  os1_top_pitch_90degrees.launch DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 
 install(DIRECTORY launch DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
-install(DIRECTORY scripts DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION} USE_SOURCE_PERMISSIONS FILES_MATCHING PATTERN "*.py" PATTERN "*.sh" )
+install(DIRECTORY scripts DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION} USE_SOURCE_PERMISSIONS )
 
 #message("ARGCH is ${CMAKE_SYSTEM_PROCESSOR}")
 

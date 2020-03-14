@@ -12,7 +12,8 @@ jobs:
         uses: AutoModality/action-clean@v1.0.1
       - uses: actions/checkout@v2
       - name: Package
-        uses: AutoModality/action-package-debian-ros@v1.3.2
+        id: package
+        uses: AutoModality/action-package-debian-ros@v3.0.0
         with:
           dev-repo-entitlement: ${{ secrets.CLOUDSMITH_READ_DEV_ENTITLEMENT }}
           release-repo-entitlement: ${{ secrets.CLOUDSMITH_READ_RELEASE_ENTITLEMENT }}

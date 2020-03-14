@@ -1,6 +1,6 @@
 #!/bin/bash
 PACKAGE=am-ouster
-source /opt/ros/kinetic/setup.bash
+source /opt/ros/melodic/setup.bash
 echo "We are $(pwd)"
 CURDIR=$(readlink -f $(pwd))
 mkdir -p catkin_ws/src/${PACKAGE}
